@@ -146,7 +146,7 @@ const Register = () => {
                     value={formData.gender}
                     onChange={(e) => setFormData({...formData, gender: e.target.value})}
                     required
-                    className="w-full pl-14 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white appearance-none"
+                    className="w-full pl-14 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-black appearance-none"
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -203,13 +203,13 @@ const Register = () => {
                 checked={formData.agreeTerms}
                 onChange={(e) => setFormData({...formData, agreeTerms: e.target.checked})}
                 required
-                className="mt-1 w-5 h-5 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                className="mt-1 w-5 h-5 text-primary-400 border-gray-300 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-gray-300">
                 I agree to the{' '}
-                <Link to="/terms" target="_blank" className="text-primary-500 font-semibold hover:underline">Terms & Conditions</Link>
+                <Link to="/terms" target="_blank" className="text-primary-400 font-semibold hover:underline">Terms & Conditions</Link>
                 {' '}and{' '}
-                <Link to="/privacy" target="_blank" className="text-primary-500 font-semibold hover:underline">Privacy Policy</Link>
+                <Link to="/privacy" target="_blank" className="text-primary-400 font-semibold hover:underline">Privacy Policy</Link>
               </span>
             </label>
 
@@ -236,7 +236,7 @@ const Register = () => {
 
           <p className="mt-8 text-center text-gray-400">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary-500 font-bold hover:underline">Sign In</Link>
+            <Link to="/login" className="text-primary-400 font-bold hover:underline">Sign In</Link>
           </p>
         </div>
       </div>

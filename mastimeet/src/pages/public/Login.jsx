@@ -96,7 +96,7 @@ const Login = () => {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 text-primary-500 border-gray-600 bg-gray-700 rounded focus:ring-primary-500" />
+                <input type="checkbox" className="w-4 h-4 text-primary-400 border-gray-600 bg-gray-700 rounded focus:ring-primary-500" />
                 <span className="text-sm text-gray-300">Remember me</span>
               </label>
               <Link to="/forgot-password" className="text-sm text-primary-400 hover:underline font-semibold">
@@ -131,7 +131,7 @@ const Login = () => {
 
           <p className="mt-8 text-center text-gray-400">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary-500 font-bold hover:underline">Sign Up</Link>
+            <Link to="/register" className="text-primary-400 font-bold hover:underline">Sign Up</Link>
           </p>
         </div>
       </div>

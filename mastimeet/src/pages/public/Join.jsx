@@ -98,11 +98,11 @@ const Join = () => {
             Continue →
           </button>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+          <div className="mt-6 p-4 bg-gray-700 rounded-xl">
             <p className="text-sm text-gray-300 text-center">
               🛡️ By continuing, you agree to our{' '}
-              <a href="/terms" className="text-primary-500 font-semibold hover:underline">Terms</a> and{' '}
-              <a href="/guidelines" className="text-primary-500 font-semibold hover:underline">Community Guidelines</a>
+              <a href="/terms" className="text-primary-400 font-semibold hover:underline">Terms</a> and{' '}
+              <a href="/guidelines" className="text-primary-400 font-semibold hover:underline">Community Guidelines</a>
             </p>
           </div>
         </div>

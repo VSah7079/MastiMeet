@@ -67,22 +67,22 @@ const Privacy = () => {
           <section className="space-y-4">
             <h2 className="text-3xl font-bold text-white">🔒 How We Protect Your Data</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-50 rounded-xl p-6">
+              <div className="bg-gray-700 rounded-xl p-6">
                 <span className="text-5xl block mb-3">🔐</span>
                 <h4 className="text-xl font-bold text-white mb-2">Encryption</h4>
                 <p className="text-gray-300">End-to-end encryption for all chats</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-6">
+              <div className="bg-gray-700 rounded-xl p-6">
                 <span className="text-5xl block mb-3">🛡️</span>
                 <h4 className="text-xl font-bold text-white mb-2">Secure Servers</h4>
                 <p className="text-gray-300">Industry-standard security protocols</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-6">
+              <div className="bg-gray-700 rounded-xl p-6">
                 <span className="text-5xl block mb-3">🔑</span>
                 <h4 className="text-xl font-bold text-white mb-2">Access Control</h4>
                 <p className="text-gray-300">Limited employee access to data</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-6">
+              <div className="bg-gray-700 rounded-xl p-6">
                 <span className="text-5xl block mb-3">📱</span>
                 <h4 className="text-xl font-bold text-white mb-2">Two-Factor Auth</h4>
                 <p className="text-gray-300">Optional 2FA for extra security</p>
@@ -122,7 +122,7 @@ const Privacy = () => {
               <li>Personalize content</li>
               <li>Improve functionality</li>
             </ul>
-            <p className="bg-blue-50 p-4 rounded-lg text-gray-300">
+            <p className="bg-gray-700 p-4 rounded-lg text-gray-300">
               You can control cookies through your browser settings, but some features may not work properly.
             </p>
           </section>
@@ -194,8 +194,8 @@ const Privacy = () => {
           <section className="space-y-4">
             <h2 className="text-3xl font-bold text-white">📞 Contact Us</h2>
             <p className="text-gray-300">If you have questions about this Privacy Policy, please contact us:</p>
-            <div className="bg-blue-50 rounded-xl p-6 space-y-2">
-              <p className="text-white"><strong>Email:</strong> <span className="text-primary-500">privacy@mastimeet.com</span></p>
+            <div className="bg-gray-700 rounded-xl p-6 space-y-2">
+              <p className="text-white"><strong>Email:</strong> <span className="text-primary-400">privacy@mastimeet.com</span></p>
               <p className="text-white"><strong>Address:</strong> MastiMeet Privacy Team, Mumbai, India</p>
               <p className="text-white"><strong>Response Time:</strong> Within 48 hours</p>
             </div>

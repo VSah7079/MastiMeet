@@ -81,7 +81,7 @@ const Terms = () => {
             <h2 className="text-3xl font-bold text-white mb-4">7. Privacy</h2>
             <p className="text-gray-300 leading-relaxed">
               Your use of MastiMeet is also governed by our Privacy Policy. Please review our{' '}
-              <Link to="/privacy" className="text-primary-500 hover:underline font-semibold">Privacy Policy</Link>, which also governs the Service and informs 
+              <Link to="/privacy" className="text-primary-400 hover:underline font-semibold">Privacy Policy</Link>, which also governs the Service and informs 
               users of our data collection practices.
             </p>
           </section>
@@ -135,7 +135,7 @@ const Terms = () => {
             <h2 className="text-3xl font-bold text-white mb-4">13. Contact Us</h2>
             <p className="text-gray-300 leading-relaxed">
               If you have any questions about these Terms & Conditions, please contact us at{' '}
-              <a href="mailto:legal@mastimeet.com" className="text-primary-500 hover:underline font-semibold">legal@mastimeet.com</a>
+              <a href="mailto:legal@mastimeet.com" className="text-primary-400 hover:underline font-semibold">legal@mastimeet.com</a>
             </p>
           </section>
 

@@ -11,7 +11,7 @@ const Home = () => {
           <Link to="/about" className="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-all">About</Link>
           <Link to="/contact" className="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-all">Contact</Link>
           <Link to="/login" className="bg-transparent border-2 border-white px-4 py-2 rounded-lg text-white transition-all hover:bg-white/20">Login</Link>
-          <Link to="/register" className="bg-white text-primary-500 font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-lg">Sign Up</Link>
+          <Link to="/register" className="bg-white text-primary-400 font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-lg">Sign Up</Link>
         </div>
       </nav>
 
@@ -25,28 +25,28 @@ const Home = () => {
             Meet new friends, have fun conversations, and discover interesting people from around the world
           </p>
           <div className="flex gap-6">
-            <Link to="/join" className="bg-white/20 text-primary-500  border-2 border-white px-10 py-4 text-lg font-semibold rounded-full transition-all hover:-translate-y-1 hover:shadow-2xl">
+            <Link to="/join" className="bg-white/20 text-primary-400  border-2 border-white px-10 py-4 text-lg font-semibold rounded-full transition-all hover:-translate-y-1 hover:shadow-2xl">
               🚀 Start Chatting Now
             </Link>
-            <Link to="/about" className="bg-white/20 text-white border-2 border-white px-10 py-4 text-lg font-semibold rounded-full transition-all hover:bg-white hover:text-primary-500">
+            <Link to="/about" className="bg-white/20 text-white border-2 border-white px-10 py-4 text-lg font-semibold rounded-full transition-all hover:bg-white hover:text-primary-400">
               Learn More
             </Link>
           </div>
         </div>
         <div className="relative h-[500px]">
-          <div className="absolute top-[10%] left-[10%] bg-white text-primary-500 p-6 rounded-3xl shadow-2xl animate-float">
+          <div className="absolute top-[10%] left-[10%] bg-white text-primary-400 p-6 rounded-3xl shadow-2xl animate-float">
             <span className="text-5xl block mb-2">👋</span>
             <p className="font-semibold">Say Hi!</p>
           </div>
-          <div className="absolute top-[20%] right-[10%] bg-white text-primary-500 p-6 rounded-3xl shadow-2xl animate-float" style={{animationDelay: '0.5s'}}>
+          <div className="absolute top-[20%] right-[10%] bg-white text-primary-400 p-6 rounded-3xl shadow-2xl animate-float" style={{animationDelay: '0.5s'}}>
             <span className="text-5xl block mb-2">🎮</span>
             <p className="font-semibold">Gaming</p>
           </div>
-          <div className="absolute bottom-[30%] left-[20%] bg-white text-primary-500 p-6 rounded-3xl shadow-2xl animate-float" style={{animationDelay: '1s'}}>
+          <div className="absolute bottom-[30%] left-[20%] bg-white text-primary-400 p-6 rounded-3xl shadow-2xl animate-float" style={{animationDelay: '1s'}}>
             <span className="text-5xl block mb-2">🎵</span>
             <p className="font-semibold">Music</p>
           </div>
-          <div className="absolute bottom-[10%] right-[20%] bg-white text-primary-500 p-6 rounded-3xl shadow-2xl animate-float" style={{animationDelay: '1.5s'}}>
+          <div className="absolute bottom-[10%] right-[20%] bg-white text-primary-400 p-6 rounded-3xl shadow-2xl animate-float" style={{animationDelay: '1.5s'}}>
             <span className="text-5xl block mb-2">⚽</span>
             <p className="font-semibold">Sports</p>
           </div>
@@ -93,7 +93,7 @@ const Home = () => {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-5xl font-bold mb-6">Ready to Make New Friends?</h2>
           <p className="text-xl mb-10 text-white/90">Join thousands of users already having fun on MastiMeet</p>
-          <Link to="/register" className="inline-block bg-white/20 border-2 border-white text-primary-500 font-bold text-lg px-12 py-5 rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300">
+          <Link to="/register" className="inline-block bg-white/20 border-2 border-white text-primary-400 font-bold text-lg px-12 py-5 rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300">
             Get Started Free
           </Link>
         </div>
