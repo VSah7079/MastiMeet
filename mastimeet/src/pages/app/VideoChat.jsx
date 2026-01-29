@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 const VideoChat = () => {
   const navigate = useNavigate();
@@ -14,6 +15,9 @@ const VideoChat = () => {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const mediaStreamRef = useRef(null);
+  const socketRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const remoteStreamRef = useRef(null);
 
   // Current user data (from localStorage or auth context)
   const currentUser = {
@@ -42,18 +46,73 @@ const VideoChat = () => {
     }
   }, [cameraPermission, cameraLoading, isConnecting, isConnected]);
 
+  // Socket.io connection and WebRTC setup
   useEffect(() => {
-    // Simulate connecting to a partner
-    const connectTimer = setTimeout(() => {
-      setIsConnecting(false);
-      setIsConnected(true);
+    // Connect to backend socket server
+    socketRef.current = io('http://localhost:5000');
+
+    socketRef.current.on('connect', () => {
+      console.log('Connected to signaling server');
+      // Join the matching queue with user's interests (get from localStorage or props)
+      const userInterests = JSON.parse(localStorage.getItem('selectedInterests') || '[]');
+      socketRef.current.emit('queue:join', { interests: userInterests });
+    });
+
+    socketRef.current.on('queue:waiting', (data) => {
+      console.log('Waiting in queue:', data);
+      setIsConnecting(true);
+      setIsConnected(false);
+    });
+
+    socketRef.current.on('match:found', async ({ roomId, partnerId, partnerInterests }) => {
+      console.log('Match found!', { roomId, partnerId });
       setPartnerInfo({
         name: 'Random User',
-        interests: ['Gaming', 'Music', 'Travel']
+        interests: partnerInterests || ['Gaming', 'Music', 'Travel']
       });
-    }, 3000);
+      
+      // Create peer connection and send offer
+      await createPeerConnection(roomId, true);
+    });
 
-    return () => clearTimeout(connectTimer);
+    socketRef.current.on('signal:offer', async ({ offer, roomId }) => {
+      console.log('Received offer');
+      await createPeerConnection(roomId, false);
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peerConnectionRef.current.createAnswer();
+      await peerConnectionRef.current.setLocalDescription(answer);
+      socketRef.current.emit('signal:answer', { answer, roomId });
+    });
+
+    socketRef.current.on('signal:answer', async ({ answer }) => {
+      console.log('Received answer');
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      setIsConnecting(false);
+      setIsConnected(true);
+    });
+
+    socketRef.current.on('signal:ice', async ({ candidate }) => {
+      console.log('Received ICE candidate');
+      if (peerConnectionRef.current) {
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    socketRef.current.on('partner:disconnected', () => {
+      console.log('Partner disconnected');
+      closePeerConnection();
+      setIsConnected(false);
+      setIsConnecting(false);
+      setPartnerInfo(null);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('queue:leave');
+        socketRef.current.disconnect();
+      }
+      closePeerConnection();
+    };
   }, []);
 
   useEffect(() => {
@@ -71,14 +130,93 @@ const VideoChat = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const createPeerConnection = async (roomId, isInitiator) => {
+    try {
+      const configuration = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      };
+
+      peerConnectionRef.current = new RTCPeerConnection(configuration);
+
+      // Add local stream tracks to peer connection
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => {
+          peerConnectionRef.current.addTrack(track, mediaStreamRef.current);
+        });
+      }
+
+      // Handle incoming remote stream
+      remoteStreamRef.current = new MediaStream();
+      peerConnectionRef.current.ontrack = (event) => {
+        console.log('Received remote track');
+        event.streams[0].getTracks().forEach(track => {
+          remoteStreamRef.current.addTrack(track);
+        });
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        }
+        setIsConnecting(false);
+        setIsConnected(true);
+      };
+
+      // Handle ICE candidates
+      peerConnectionRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log('Sending ICE candidate');
+          socketRef.current.emit('signal:ice', { candidate: event.candidate, roomId });
+        }
+      };
+
+      // Monitor connection state
+      peerConnectionRef.current.onconnectionstatechange = () => {
+        console.log('Connection state:', peerConnectionRef.current.connectionState);
+        if (peerConnectionRef.current.connectionState === 'disconnected' || 
+            peerConnectionRef.current.connectionState === 'failed') {
+          closePeerConnection();
+          setIsConnected(false);
+        }
+      };
+
+      // If initiator, create and send offer
+      if (isInitiator) {
+        const offer = await peerConnectionRef.current.createOffer();
+        await peerConnectionRef.current.setLocalDescription(offer);
+        socketRef.current.emit('signal:offer', { offer, roomId });
+      }
+    } catch (error) {
+      console.error('Error creating peer connection:', error);
+    }
+  };
+
+  const closePeerConnection = () => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach(track => track.stop());
+      remoteStreamRef.current = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+  };
+
   const handleNextPartner = () => {
+    closePeerConnection();
     setIsConnected(false);
     setIsConnecting(true);
     setChatTime(0);
-    setTimeout(() => {
-      setIsConnecting(false);
-      setIsConnected(true);
-    }, 2000);
+    setPartnerInfo(null);
+    
+    // Rejoin the queue
+    if (socketRef.current) {
+      const userInterests = JSON.parse(localStorage.getItem('selectedInterests') || '[]');
+      socketRef.current.emit('queue:join', { interests: userInterests });
+    }
   };
 
   const stopCamera = () => {
@@ -113,6 +251,11 @@ const VideoChat = () => {
 
   const handleEndChat = () => {
     if (confirm('Are you sure you want to end this chat?')) {
+      closePeerConnection();
+      if (socketRef.current) {
+        socketRef.current.emit('queue:leave');
+        socketRef.current.disconnect();
+      }
       stopCamera();
       navigate('/interest-select');
     }

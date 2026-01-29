@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiPost } from '../../lib/api';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,19 +14,42 @@ const Register = () => {
     agreeTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      setError('Passwords do not match.');
       return;
     }
     if (!formData.agreeTerms) {
-      alert('Please agree to terms and conditions');
+      setError('Please agree to terms and conditions.');
       return;
     }
-    console.log('Register:', formData);
-    navigate('/interest-select');
+
+    setLoading(true);
+
+    try {
+      const data = await apiPost('/api/auth/register', {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        age: formData.age ? Number(formData.age) : undefined,
+        gender: formData.gender
+      });
+
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
+
+      navigate('/interest-select');
+    } catch (err) {
+      setError(err.message || 'Registration failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,6 +109,11 @@ const Register = () => {
           <p className="text-gray-400 mb-8">Sign up to start chatting</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="username" className="block text-sm font-semibold text-gray-300 mb-2">Username</label>
@@ -213,8 +242,12 @@ const Register = () => {
               </span>
             </label>
 
-            <button type="submit" className="w-full bg-primary-500 text-white font-bold text-lg py-4 rounded-xl hover:shadow-xl hover:scale-105 hover:bg-primary-600 transition-all duration-300">
-              Create Account
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary-500 text-white font-bold text-lg py-4 rounded-xl hover:shadow-xl hover:scale-105 hover:bg-primary-600 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
 

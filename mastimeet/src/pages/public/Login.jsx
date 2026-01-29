@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiPost } from '../../lib/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -8,12 +9,29 @@ const Login = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add authentication logic here
-    console.log('Login:', formData);
-    navigate('/interest-select');
+    setError('');
+    setLoading(true);
+
+    try {
+      const data = await apiPost('/api/auth/login', {
+        email: formData.email,
+        password: formData.password
+      });
+
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
+
+      navigate('/interest-select');
+    } catch (err) {
+      setError(err.message || 'Login failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,6 +73,11 @@ const Login = () => {
           <p className="text-gray-400 mb-8">Enter your credentials to continue</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-300 mb-2">Email Address</label>
               <div className="relative">
@@ -104,8 +127,12 @@ const Login = () => {
               </Link>
             </div>
 
-            <button type="submit" className="w-full bg-primary-500 text-white font-bold text-lg py-4 rounded-xl hover:shadow-xl hover:scale-105 hover:bg-primary-600 transition-all duration-300">
-              Sign In
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary-500 text-white font-bold text-lg py-4 rounded-xl hover:shadow-xl hover:scale-105 hover:bg-primary-600 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
