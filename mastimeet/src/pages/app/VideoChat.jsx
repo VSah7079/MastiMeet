@@ -40,7 +40,7 @@ const VideoChat = () => {
     if (localVideoRef.current && mediaStreamRef.current) {
       localVideoRef.current.srcObject = mediaStreamRef.current;
     }
-  }, [cameraPermission, cameraLoading]);
+  }, [cameraPermission, cameraLoading, isConnecting, isConnected]);
 
   useEffect(() => {
     // Simulate connecting to a partner
@@ -158,11 +158,17 @@ const VideoChat = () => {
             <div className="lg:col-span-3 relative rounded-3xl overflow-hidden shadow-2xl group">
               {/* Video Background */}
               <div className="w-full h-full bg-gradient-to-b from-black to-gray-900 flex items-center justify-center relative">
-                <div ref={remoteVideoRef} className="w-full h-full flex items-center justify-center text-center">
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-center pointer-events-none">
                   <div>
                     <div className="text-9xl md:text-9xl mb-6 animate-pulse drop-shadow-lg">👥</div>
                     <p className="text-2xl md:text-4xl font-bold text-primary-300 mb-2">Partner's Video</p>
-                    <p className="text-gray-400">Connecting...</p>
+                    <p className="text-gray-400">Waiting for stream...</p>
                   </div>
                 </div>
 
@@ -265,7 +271,7 @@ const VideoChat = () => {
 
         {/* Connecting State - Full Screen */}
         {isConnecting && !isConnected && (
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center relative">
             <div className="relative">
               {/* Animated Rings */}
               <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-500 animate-spin" style={{width: '120px', height: '120px', animationDuration: '3s'}}></div>
@@ -285,6 +291,22 @@ const VideoChat = () => {
               <div className="w-3 h-3 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
               <div className="w-3 h-3 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
               <div className="w-3 h-3 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+            </div>
+
+            {/* Local Preview أثناء Connecting */}
+            <div className="absolute bottom-4 right-4 w-24 md:w-32 lg:w-40 h-24 md:h-32 lg:h-40 rounded-2xl overflow-hidden border-4 border-primary-500 shadow-2xl bg-black">
+              {cameraPermission ? (
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                  style={{ transform: 'scaleX(-1)' }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-700 flex items-center justify-center text-3xl md:text-4xl">📹</div>
+              )}
             </div>
           </div>
         )}
