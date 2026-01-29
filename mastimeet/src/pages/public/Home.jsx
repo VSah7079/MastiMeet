@@ -33,7 +33,7 @@ const Home = () => {
             </Link>
           </div>
         </div>
-        <div className="relative h-[500px]">
+        <div className="relative h-125">
           <div className="absolute top-[10%] left-[10%] bg-white text-primary-400 p-6 rounded-3xl shadow-2xl animate-float">
             <span className="text-5xl block mb-2">👋</span>
             <p className="font-semibold">Say Hi!</p>

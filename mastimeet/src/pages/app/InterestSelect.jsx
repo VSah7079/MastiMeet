@@ -104,7 +104,7 @@ const InterestSelect = () => {
           <button 
             className={`text-lg font-bold py-4 px-12 rounded-full transition-all duration-300 ${
               selectedInterests.length > 0 
-                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-xl hover:scale-105' 
+                ? 'bg-linear-to-r from-primary-500 to-secondary-500 text-white shadow-xl hover:scale-105' 
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
             onClick={handleStartChat}
