@@ -1,28 +1,62 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Delay credentials reading until they're needed
+let emailTransporter = null;
 
-// Test connection
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Email service error:', error.message);
-  } else {
-    console.log('✓ Email service is ready');
+const getTransporter = () => {
+  if (emailTransporter) return emailTransporter;
+
+  const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
+  const EMAIL_PASSWORD = (process.env.EMAIL_PASSWORD || '').trim();
+
+  console.log('📧 Email Configuration:');
+  console.log('   User:', EMAIL_USER || '❌ Not set');
+  console.log('   Pass Length:', EMAIL_PASSWORD?.length, 'characters');
+  console.log('   Pass Preview:', EMAIL_PASSWORD?.substring(0, 5) + '...' || '❌ Not set');
+
+  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    console.error('❌ ERROR: Email credentials missing in .env file!');
+    console.error('   Please add EMAIL_USER and EMAIL_PASSWORD to .env');
   }
-});
+
+  emailTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASSWORD
+    }
+  });
+
+  // Test connection with detailed logging
+  emailTransporter.verify((error, success) => {
+    if (error) {
+      console.error('❌ Email service failed to authenticate:');
+      console.error('   Error:', error.message);
+      console.error('   Code:', error.code);
+      if (error.code === 'EAUTH') {
+        console.error('   ⚠️  Authentication failed! Check:');
+        console.error('      • 2FA is enabled on Gmail');
+        console.error('      • App Password is correctly generated');
+        console.error('      • Password is pasted exactly (with spaces)');
+        console.error('      • Email format is correct');
+      }
+    } else {
+      console.log('✓ Email service ready and authenticated!');
+    }
+  });
+
+  return emailTransporter;
+};
 
 export const generateVerificationToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
 export const sendVerificationEmail = async (email, username, verificationToken) => {
+  const transporter = getTransporter();
   const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
 
   const htmlContent = `
@@ -91,6 +125,7 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
 };
 
 export const sendWelcomeEmail = async (email, username) => {
+  const transporter = getTransporter();
   const htmlContent = `
     <!DOCTYPE html>
     <html>

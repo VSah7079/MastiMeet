@@ -2,11 +2,18 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { Server } from 'socket.io';
 import connectDB from './db.js';
 import authRoutes from './routes/auth.js';
 
-dotenv.config();
+// Load .env file explicitly
+const __dirname = path.resolve();
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+console.log('✓ Environment variables loaded');
+console.log('  Email User:', process.env.EMAIL_USER ? '✓ Set' : '✗ Missing');
+console.log('  Email Pass:', process.env.EMAIL_PASSWORD ? `✓ Set (${process.env.EMAIL_PASSWORD.length} chars)` : '✗ Missing');
 
 const app = express();
 const server = http.createServer(app);

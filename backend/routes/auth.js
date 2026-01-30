@@ -20,6 +20,19 @@ const sanitizeUser = (user) => ({
   isEmailVerified: user.isEmailVerified
 });
 
+// Debug endpoint to check email configuration
+router.get('/debug/email-config', (req, res) => {
+  const emailUser = (process.env.EMAIL_USER || '').trim();
+  const emailPass = (process.env.EMAIL_PASSWORD || '').trim();
+  
+  return res.json({
+    emailUser: emailUser ? '✓ Set' : '✗ Missing',
+    emailPassLength: emailPass?.length || 0,
+    emailPassPreview: emailPass ? emailPass.substring(0, 5) + '...' : 'Missing',
+    environment: process.env.NODE_ENV
+  });
+});
+
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, age, gender } = req.body || {};
@@ -47,28 +60,24 @@ router.post('/register', async (req, res) => {
       passwordHash,
       age: age ? Number(age) : undefined,
       gender,
-      isEmailVerified: false,
+      isEmailVerified: false, // Temporary: will enable after email setup works
       emailVerificationToken: verificationToken,
       emailVerificationExpires: verificationExpires
     });
 
-    // Send verification email
+    // Try to send verification email (but don't block registration if it fails)
     try {
       const emailSent = await sendVerificationEmail(newUser.email, newUser.username, verificationToken);
-
-      if (!emailSent) {
-        console.warn('Email sending returned false for:', newUser.email);
-        // Don't block registration if email fails
-      }
+      console.log('📧 Verification email sent:', emailSent);
     } catch (emailErr) {
-      console.error('Email sending error:', emailErr.message);
-      // Don't block registration, user can still verify later
+      console.error('📧 Email sending error (non-blocking):', emailErr.message);
+      // Don't block registration
     }
 
     const token = signToken(newUser._id.toString());
 
     return res.status(201).json({
-      message: 'Registration successful! Please check your email to verify your account.',
+      message: 'Registration successful! Attempting to send verification email...',
       token,
       user: sanitizeUser(newUser)
     });
@@ -126,12 +135,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    if (!user.isEmailVerified) {
-      return res.status(403).json({ 
-        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
-        needsEmailVerification: true
-      });
-    }
+    // Temporary: Allow login even if email not verified (for testing)
+    // TODO: Re-enable email verification check after email setup is working
+    // if (!user.isEmailVerified) {
+    //   return res.status(403).json({ 
+    //     message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+    //     needsEmailVerification: true
+    //   });
+    // }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
