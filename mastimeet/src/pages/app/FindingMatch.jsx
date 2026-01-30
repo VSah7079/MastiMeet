@@ -41,9 +41,9 @@ const FindingMatch = () => {
       clearInterval(timerRef.current);
       setStatus('found');
 
-      // Redirect to video chat after 2 seconds
+      // Redirect to matched page after 2 seconds
       setTimeout(() => {
-        navigate('/video-chat', { state: { roomId, partnerId } });
+        navigate('/matched', { state: { roomId, partnerId } });
       }, 2000);
     });
 

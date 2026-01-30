@@ -43,6 +43,7 @@ function App() {
         <Route path="/interest-select" element={<ProtectedRoute element={<InterestSelect />} />} />
         <Route path="/connecting" element={<ProtectedRoute element={<Connecting />} />} />
         <Route path="/finding-match" element={<ProtectedRoute element={<FindingMatch />} />} />
+        <Route path="/matched" element={<ProtectedRoute element={<Matched />} />} />
         <Route path="/video-chat" element={<ProtectedRoute element={<VideoChat />} />} />
         <Route path="/text-chat" element={<ProtectedRoute element={<TextChat />} />} />
         <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
