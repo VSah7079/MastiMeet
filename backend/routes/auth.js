@@ -53,10 +53,16 @@ router.post('/register', async (req, res) => {
     });
 
     // Send verification email
-    const emailSent = await sendVerificationEmail(newUser.email, newUser.username, verificationToken);
+    try {
+      const emailSent = await sendVerificationEmail(newUser.email, newUser.username, verificationToken);
 
-    if (!emailSent) {
-      return res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+      if (!emailSent) {
+        console.warn('Email sending returned false for:', newUser.email);
+        // Don't block registration if email fails
+      }
+    } catch (emailErr) {
+      console.error('Email sending error:', emailErr.message);
+      // Don't block registration, user can still verify later
     }
 
     const token = signToken(newUser._id.toString());

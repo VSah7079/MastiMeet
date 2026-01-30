@@ -4,8 +4,17 @@ import crypto from 'crypto';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
+// Test connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Email service error:', error.message);
+  } else {
+    console.log('✓ Email service is ready');
   }
 });
 
