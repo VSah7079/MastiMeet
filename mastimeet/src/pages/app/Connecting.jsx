@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Connecting = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const chatMode = location.state?.mode || localStorage.getItem('chatMode') || 'video';
   const [dots, setDots] = useState('');
   const [status, setStatus] = useState('Establishing connection');
 
@@ -19,7 +21,7 @@ const Connecting = () => {
     const redirectTimer = setTimeout(() => {
       setStatus('Finding your match');
       setTimeout(() => {
-        navigate('/finding-match');
+        navigate('/finding-match', { state: { mode: chatMode } });
       }, 1000);
     }, 3000);
 
@@ -30,7 +32,7 @@ const Connecting = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
       <div className="text-center">
         {/* Animated Loader */}
         <div className="mb-12 flex justify-center">
@@ -42,7 +44,7 @@ const Connecting = () => {
             <div className="absolute inset-4 rounded-full border-3 border-transparent border-b-primary-600 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
             
             {/* Inner pulsing circle */}
-            <div className="absolute inset-8 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 opacity-50 animate-pulse"></div>
+            <div className="absolute inset-8 rounded-full bg-linear-to-r from-primary-500 to-primary-600 opacity-50 animate-pulse"></div>
             
             {/* Center icon */}
             <div className="absolute inset-0 flex items-center justify-center text-5xl">

@@ -17,6 +17,7 @@ const sanitizeUser = (user) => ({
   email: user.email,
   age: user.age,
   gender: user.gender,
+  bio: user.bio || '',
   isEmailVerified: user.isEmailVerified
 });
 
@@ -190,6 +191,93 @@ router.get('/me', async (req, res) => {
   } catch (err) {
     console.error('Get profile error:', err);
     return res.status(500).json({ message: 'Server error while getting profile.' });
+  }
+});
+
+// Update user profile
+router.put('/update-profile', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided.' });
+    }
+
+    const token = authHeader.substring(7);
+    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, secret);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token.' });
+    }
+
+    const { username, age, gender, bio } = req.body;
+
+    // Validate input
+    if (username && username.length < 2) {
+      return res.status(400).json({ message: 'Username must be at least 2 characters.' });
+    }
+
+    if (age && (age < 18 || age > 100)) {
+      return res.status(400).json({ message: 'Age must be between 18 and 100.' });
+    }
+
+    const user = await User.findById(decoded.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Update only provided fields
+    if (username) user.username = username;
+    if (age) user.age = age;
+    if (gender) user.gender = gender;
+    if (bio !== undefined) user.bio = bio;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: 'Profile updated successfully!',
+      user: sanitizeUser(user)
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    return res.status(500).json({ message: 'Server error while updating profile.' });
+  }
+});
+
+// Delete user account
+router.delete('/delete-account', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided.' });
+    }
+
+    const token = authHeader.substring(7);
+    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, secret);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token.' });
+    }
+
+    const user = await User.findById(decoded.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Delete the user account
+    await User.findByIdAndDelete(decoded.sub);
+
+    return res.status(200).json({
+      message: 'Account deleted successfully!'
+    });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    return res.status(500).json({ message: 'Server error while deleting account.' });
   }
 });
 

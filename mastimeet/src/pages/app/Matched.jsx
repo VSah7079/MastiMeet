@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const Matched = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { roomId, partnerId, isDemo } = location.state || {};
+  const { roomId, partnerId, isDemo, mode } = location.state || {};
+  const chatMode = mode || localStorage.getItem('chatMode') || 'video';
   
   const [countdown, setCountdown] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,9 +37,10 @@ const Matched = () => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          // Redirect to video chat
+          // Redirect to appropriate chat page based on mode
+          const chatPath = chatMode === 'text' ? '/text-chat' : '/video-chat';
           setTimeout(() => {
-            navigate('/video-chat', { state: { roomId, partnerId } });
+            navigate(chatPath, { state: { roomId, partnerId } });
           }, 500);
           return 0;
         }
@@ -53,7 +55,7 @@ const Matched = () => {
   }, [roomId, navigate, partnerId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
       <div className="text-center max-w-2xl">
         {/* Success Icon - Animated */}
         <div className="mb-12 flex justify-center">
@@ -69,7 +71,7 @@ const Matched = () => {
           ) : (
             // Success animation
             <div className="relative w-32 h-32">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 opacity-20 animate-pulse"></div>
+              <div className="absolute inset-0 rounded-full bg-linear-to-r from-green-500 to-emerald-500 opacity-20 animate-pulse"></div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-6xl animate-bounce">✨</div>
               </div>
@@ -91,7 +93,7 @@ const Matched = () => {
 
         {/* Partner Info Card */}
         {!isLoading && (
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border border-green-500/30 mb-8 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border border-green-500/30 mb-8 animate-in slide-in-from-bottom-4 duration-500">
             <div className="text-6xl mb-4">{isDemo ? randomPartner.avatar : '👤'}</div>
             <p className="text-white text-2xl font-bold mb-2">{isDemo ? randomPartner.name : 'Your Match'}</p>
             <p className="text-gray-300 text-lg mb-4">

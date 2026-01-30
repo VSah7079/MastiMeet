@@ -23,6 +23,56 @@ const Settings = () => {
     setSettings({ ...settings, [key]: value });
   };
 
+  const handleLogout = () => {
+    if (confirm('Are you sure you want to logout?')) {
+      // Clear authentication from localStorage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('selectedInterests');
+      
+      // Navigate to login
+      navigate('/login', { replace: true });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+        try {
+          const token = localStorage.getItem('auth_token');
+          if (!token) {
+            alert('Not authenticated');
+            return;
+          }
+
+          const response = await fetch('http://localhost:5000/api/auth/delete-account', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            // Clear authentication from localStorage
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('selectedInterests');
+            
+            alert('Account deleted successfully');
+            navigate('/login', { replace: true });
+          } else {
+            const data = await response.json();
+            alert(data.message || 'Failed to delete account');
+          }
+        } catch (error) {
+          console.error('Delete account error:', error);
+          alert('Error deleting account: ' + error.message);
+        }
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
@@ -199,10 +249,10 @@ const Settings = () => {
             <button className="w-full bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-semibold transition-colors text-left">
               ⚠️ Report a Problem
             </button>
-            <button className="w-full bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition-colors text-left">
+            <button onClick={handleLogout} className="w-full bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition-colors text-left">
               🚪 Logout
             </button>
-            <button className="w-full bg-red-900 hover:bg-red-800 px-6 py-3 rounded-lg font-semibold transition-colors text-left">
+            <button onClick={handleDeleteAccount} className="w-full bg-red-900 hover:bg-red-800 px-6 py-3 rounded-lg font-semibold transition-colors text-left">
               🗑️ Delete Account
             </button>
           </div>

@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['male', 'female', 'other', 'prefer-not']
     },
+    bio: {
+      type: String,
+      default: '',
+      maxlength: 500
+    },
     isEmailVerified: {
       type: Boolean,
       default: false

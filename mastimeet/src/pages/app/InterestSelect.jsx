@@ -47,9 +47,10 @@ const InterestSelect = () => {
     
     // Save interests to localStorage
     localStorage.setItem('selectedInterests', JSON.stringify(selectedInterests.map(i => i.name)));
+    localStorage.setItem('chatMode', chatMode);
     
     // Navigate to connecting page (then auto to finding match)
-    navigate('/connecting');
+    navigate('/connecting', { state: { mode: chatMode } });
   };
 
   const groupedInterests = interests.reduce((acc, interest) => {

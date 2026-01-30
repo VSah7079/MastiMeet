@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
 const FindingMatch = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const chatMode = location.state?.mode || localStorage.getItem('chatMode') || 'video';
   const [status, setStatus] = useState('connecting'); // connecting, waiting, found, error
   const [matchCount, setMatchCount] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -43,7 +45,7 @@ const FindingMatch = () => {
 
       // Redirect to matched page after 2 seconds
       setTimeout(() => {
-        navigate('/matched', { state: { roomId, partnerId } });
+        navigate('/matched', { state: { roomId, partnerId, mode: chatMode } });
       }, 2000);
     });
 
@@ -77,18 +79,18 @@ const FindingMatch = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent mb-2">
             MastiMeet
           </h1>
           <p className="text-gray-400">Finding Your Perfect Match...</p>
         </div>
 
         {/* Main Content */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl p-8 shadow-2xl border border-primary-500/20">
+        <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-3xl p-8 shadow-2xl border border-primary-500/20">
           {/* Status: Waiting */}
           {status === 'waiting' && (
             <>
@@ -124,11 +126,11 @@ const FindingMatch = () => {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-blue-600/30 to-blue-700/10 rounded-xl p-3 border border-blue-500/30 text-center">
+                <div className="bg-linear-to-br from-blue-600/30 to-blue-700/10 rounded-xl p-3 border border-blue-500/30 text-center">
                   <p className="text-gray-400 text-xs mb-1">Active Users</p>
                   <p className="text-xl font-bold text-blue-400">150+</p>
                 </div>
-                <div className="bg-gradient-to-br from-green-600/30 to-green-700/10 rounded-xl p-3 border border-green-500/30 text-center">
+                <div className="bg-linear-to-br from-green-600/30 to-green-700/10 rounded-xl p-3 border border-green-500/30 text-center">
                   <p className="text-gray-400 text-xs mb-1">Matches Today</p>
                   <p className="text-xl font-bold text-green-400">1,234</p>
                 </div>
@@ -146,7 +148,7 @@ const FindingMatch = () => {
               <div className="space-y-3">
                 <button
                   onClick={handleCancel}
-                  className="w-full bg-gradient-to-r from-red-600/80 to-red-700/80 hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
+                  className="w-full bg-linear-to-r from-red-600/80 to-red-700/80 hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
                 >
                   ❌ Cancel Search
                 </button>
@@ -164,7 +166,7 @@ const FindingMatch = () => {
                     const demoPartnerId = `demo_user_${Math.random().toString(36).substr(2, 9)}`;
                     navigate('/matched', { state: { roomId: demoRoomId, partnerId: demoPartnerId, isDemo: true } });
                   }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
+                  className="w-full bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
                 >
                   🎬 Skip to Demo Match
                 </button>
@@ -178,7 +180,7 @@ const FindingMatch = () => {
               {/* Success Animation */}
               <div className="flex justify-center mb-8">
                 <div className="relative w-24 h-24">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 opacity-20 animate-pulse"></div>
+                  <div className="absolute inset-0 rounded-full bg-linear-to-r from-green-500 to-emerald-500 opacity-20 animate-pulse"></div>
                   <div className="absolute inset-0 flex items-center justify-center text-5xl animate-bounce">
                     ✨
                   </div>
@@ -193,7 +195,7 @@ const FindingMatch = () => {
               </p>
 
               {/* Redirecting Info */}
-              <div className="bg-gradient-to-r from-green-600/30 to-emerald-600/30 rounded-2xl p-4 border border-green-500/30 text-center mb-6">
+              <div className="bg-linear-to-r from-green-600/30 to-emerald-600/30 rounded-2xl p-4 border border-green-500/30 text-center mb-6">
                 <p className="text-green-400 font-semibold">Redirecting to chat...</p>
                 <p className="text-gray-300 text-sm mt-2">Time waited: {formatTime(timeElapsed)}</p>
               </div>
@@ -219,13 +221,13 @@ const FindingMatch = () => {
                   setStatus('connecting');
                   window.location.reload();
                 }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg mb-3"
+                className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg mb-3"
               >
                 🔄 Retry
               </button>
               <button
                 onClick={handleCancel}
-                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
+                className="w-full bg-linear-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
               >
                 ❌ Go Back
               </button>

@@ -272,14 +272,38 @@ const VideoChat = () => {
       // Stop camera UI
       stopCamera();
       
-      // Navigate away
-      navigate('/interest-select');
+      // Navigate to home page
+      navigate('/', { replace: true });
     }
   };
 
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
-      navigate('/login');
+      // Stop media streams
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => {
+          track.enabled = false;
+          track.stop();
+        });
+        mediaStreamRef.current = null;
+      }
+      
+      // Close peer connection
+      closePeerConnection();
+      
+      // Disconnect socket
+      if (socketRef.current) {
+        socketRef.current.emit('queue:leave');
+        socketRef.current.disconnect();
+      }
+      
+      // Clear authentication from localStorage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('selectedInterests');
+      
+      // Navigate to login
+      navigate('/login', { replace: true });
     }
   };
 
@@ -308,7 +332,7 @@ const VideoChat = () => {
       </div>
 
       {/* Main Video Area */}
-      <div className="h-[calc(100vh-100px)] bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-100px)] bg-linear-to-b from-gray-900 via-gray-800 to-gray-900 overflow-hidden flex flex-col">
         
         {/* Connected State - Full Screen Layout */}
         {isConnected && (
@@ -316,7 +340,7 @@ const VideoChat = () => {
             {/* Main Video - Partner (Takes 3/4 on desktop) */}
             <div className="lg:col-span-3 relative rounded-3xl overflow-hidden shadow-2xl group">
               {/* Video Background */}
-              <div className="w-full h-full bg-gradient-to-b from-black to-gray-900 flex items-center justify-center relative">
+              <div className="w-full h-full bg-linear-to-b from-black to-gray-900 flex items-center justify-center relative">
                 <video
                   ref={remoteVideoRef}
                   autoPlay
@@ -386,7 +410,7 @@ const VideoChat = () => {
                   <p className="text-gray-400 text-xs md:text-sm mb-2 font-semibold uppercase">Interests</p>
                   <div className="flex flex-wrap gap-2">
                     {partnerInfo?.interests.map((interest, idx) => (
-                      <span key={idx} className="bg-gradient-to-r from-primary-600 to-primary-500 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold shadow-lg hover:scale-110 transition-transform">
+                      <span key={idx} className="bg-linear-to-r from-primary-600 to-primary-500 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold shadow-lg hover:scale-110 transition-transform">
                         {interest}
                       </span>
                     ))}
@@ -395,10 +419,10 @@ const VideoChat = () => {
 
                 {/* Action Buttons */}
                 <div className="space-y-2 hidden md:block">
-                  <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-3 py-2 rounded-lg font-semibold text-xs md:text-sm transition-all transform hover:scale-105 shadow-lg">
+                  <button className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-3 py-2 rounded-lg font-semibold text-xs md:text-sm transition-all transform hover:scale-105 shadow-lg">
                     🚫 Report
                   </button>
-                  <button className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-3 py-2 rounded-lg font-semibold text-xs md:text-sm transition-all transform hover:scale-105 shadow-lg">
+                  <button className="w-full bg-linear-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-3 py-2 rounded-lg font-semibold text-xs md:text-sm transition-all transform hover:scale-105 shadow-lg">
                     🚫 Block
                   </button>
                 </div>
@@ -410,8 +434,8 @@ const VideoChat = () => {
                   onClick={() => setIsMuted(!isMuted)}
                   className={`w-full py-3 rounded-full flex items-center justify-center text-lg font-bold transition-all transform hover:scale-105 shadow-lg ${
                     isMuted 
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 hover:shadow-red-900' 
-                      : 'bg-gradient-to-r from-primary-600 to-primary-700 hover:shadow-primary-900'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 hover:shadow-red-900' 
+                      : 'bg-linear-to-r from-primary-600 to-primary-700 hover:shadow-primary-900'
                   }`}
                   title={isMuted ? 'Unmute' : 'Mute'}
                 >
@@ -546,8 +570,8 @@ const VideoChat = () => {
                 onClick={() => setIsMuted(!isMuted)}
                 className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl md:text-2xl transition-all transform hover:scale-110 font-bold shadow-lg ${
                   isMuted 
-                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:shadow-red-900' 
-                    : 'bg-gradient-to-r from-primary-600 to-primary-700 hover:shadow-primary-900'
+                    ? 'bg-linear-to-r from-red-600 to-red-700 hover:shadow-red-900' 
+                    : 'bg-linear-to-r from-primary-600 to-primary-700 hover:shadow-primary-900'
                 }`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
@@ -555,7 +579,7 @@ const VideoChat = () => {
               </button>
               <button
                 onClick={handleEndChat}
-                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 md:px-8 py-3 md:py-4 rounded-full text-sm md:text-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                className="bg-linear-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 md:px-8 py-3 md:py-4 rounded-full text-sm md:text-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
               >
                 ❌ End
               </button>
@@ -563,8 +587,8 @@ const VideoChat = () => {
           </div>
 
           {/* Right Sidebar - Partner Info & Actions */}
-          <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-4 md:p-6 overflow-y-auto flex flex-col gap-4 border border-primary-500/20 shadow-xl">
-            <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent mb-2">👤 Partner Info</h3>
+          <div className="bg-linear-to-b from-gray-800 to-gray-900 rounded-2xl p-4 md:p-6 overflow-y-auto flex flex-col gap-4 border border-primary-500/20 shadow-xl">
+            <h3 className="text-xl md:text-2xl font-bold bg-linear-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent mb-2">👤 Partner Info</h3>
             
             <div className="text-center py-8">
               <div className="text-5xl mb-2 animate-bounce">🔄</div>
@@ -583,7 +607,7 @@ const VideoChat = () => {
         {!isUserProfileExpanded && (
           <button
             onClick={() => setIsUserProfileExpanded(true)}
-            className="w-16 md:w-20 h-16 md:h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 shadow-2xl flex items-center justify-center text-3xl md:text-4xl hover:scale-110 transition-transform border-4 border-primary-400 cursor-pointer hover:shadow-primary-500/50"
+            className="w-16 md:w-20 h-16 md:h-20 rounded-full bg-linear-to-br from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 shadow-2xl flex items-center justify-center text-3xl md:text-4xl hover:scale-110 transition-transform border-4 border-primary-400 cursor-pointer hover:shadow-primary-500/50"
             title="Show profile"
           >
             {currentUser.avatar}
@@ -592,7 +616,7 @@ const VideoChat = () => {
 
         {/* Expanded State - Full Profile Card */}
         {isUserProfileExpanded && (
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-primary-500/30 overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-primary-500/30 overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
             {/* Close Button */}
             <button
               onClick={() => setIsUserProfileExpanded(false)}
@@ -603,7 +627,7 @@ const VideoChat = () => {
             </button>
 
             {/* Profile Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-4 md:p-6 text-center">
+            <div className="bg-linear-to-r from-primary-600 to-primary-700 p-4 md:p-6 text-center">
               <div className="text-5xl md:text-6xl mb-3">{currentUser.avatar}</div>
               <h3 className="text-xl md:text-2xl font-bold text-white">{currentUser.name}</h3>
               <p className="text-primary-100 text-sm md:text-base">@{currentUser.username}</p>
