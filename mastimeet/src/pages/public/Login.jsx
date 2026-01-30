@@ -11,10 +11,34 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    return newErrors;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const newErrors = validateForm();
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setError('');
+    setErrors({});
     setLoading(true);
 
     try {
@@ -28,7 +52,12 @@ const Login = () => {
 
       navigate('/interest-select');
     } catch (err) {
-      setError(err.message || 'Login failed.');
+      // Check if email verification is required
+      if (err.response?.status === 403 && err.response?.data?.needsEmailVerification) {
+        setError('📧 Please verify your email first. Check your inbox for the verification link.');
+      } else {
+        setError(err.message || 'Login failed.');
+      }
     } finally {
       setLoading(false);
     }
@@ -87,11 +116,17 @@ const Login = () => {
                   id="email"
                   placeholder="your@email.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, email: e.target.value});
+                    setErrors({...errors, email: ''});
+                  }}
                   required
-                  className="w-full pl-14 pr-4 py-4 border-2 border-gray-700 bg-gray-700 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                  className={`w-full pl-14 pr-4 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                    errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                  }`}
                 />
               </div>
+              {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
@@ -103,9 +138,14 @@ const Login = () => {
                   id="password"
                   placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, password: e.target.value});
+                    setErrors({...errors, password: ''});
+                  }}
                   required
-                  className="w-full pl-14 pr-14 py-4 border-2 border-gray-700 bg-gray-700 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                  className={`w-full pl-14 pr-14 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                    errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                  }`}
                 />
                 <button
                   type="button"
@@ -115,6 +155,7 @@ const Login = () => {
                   {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
+              {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
             </div>
 
             <div className="flex items-center justify-between">

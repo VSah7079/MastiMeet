@@ -16,20 +16,75 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, label: '' };
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    
+    const levels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+    const colors = ['', 'text-red-500', 'text-orange-500', 'text-yellow-500', 'text-lime-500', 'text-green-500'];
+    return { strength, label: levels[strength], color: colors[strength] };
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.username) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    }
+    
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (!formData.age) {
+      newErrors.age = 'Age is required';
+    } else if (formData.age < 18) {
+      newErrors.age = 'You must be 18 or older';
+    }
+    
+    if (!formData.gender) {
+      newErrors.gender = 'Please select a gender';
+    }
+    
+    if (!formData.agreeTerms) {
+      newErrors.agreeTerms = 'Please agree to terms and conditions';
+    }
+    
+    return newErrors;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const newErrors = validateForm();
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (!formData.agreeTerms) {
-      setError('Please agree to terms and conditions.');
-      return;
-    }
-
+    setErrors({});
     setLoading(true);
 
     try {
@@ -124,11 +179,17 @@ const Register = () => {
                     id="username"
                     placeholder="Choose username"
                     value={formData.username}
-                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, username: e.target.value});
+                      setErrors({...errors, username: ''});
+                    }}
                     required
-                    className="w-full pl-14 pr-4 py-4 border-2 border-gray-700 bg-gray-700 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                    className={`w-full pl-14 pr-4 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                      errors.username ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                    }`}
                   />
                 </div>
+                {errors.username && <p className="text-red-400 text-sm mt-1">{errors.username}</p>}
               </div>
 
               <div>
@@ -140,11 +201,17 @@ const Register = () => {
                     id="email"
                     placeholder="your@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, email: e.target.value});
+                      setErrors({...errors, email: ''});
+                    }}
                     required
-                    className="w-full pl-14 pr-4 py-4 border-2 border-gray-700 bg-gray-700 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                    className={`w-full pl-14 pr-4 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                      errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                    }`}
                   />
                 </div>
+                {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
               </div>
             </div>
 
@@ -159,11 +226,17 @@ const Register = () => {
                     placeholder="18+"
                     min="18"
                     value={formData.age}
-                    onChange={(e) => setFormData({...formData, age: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, age: e.target.value});
+                      setErrors({...errors, age: ''});
+                    }}
                     required
-                    className="w-full pl-14 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                    className={`w-full pl-14 pr-4 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                      errors.age ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                    }`}
                   />
                 </div>
+                {errors.age && <p className="text-red-400 text-sm mt-1">{errors.age}</p>}
               </div>
 
               <div>
@@ -173,9 +246,14 @@ const Register = () => {
                   <select
                     id="gender"
                     value={formData.gender}
-                    onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, gender: e.target.value});
+                      setErrors({...errors, gender: ''});
+                    }}
                     required
-                    className="w-full pl-14 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-black appearance-none"
+                    className={`w-full pl-14 pr-4 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors appearance-none text-white ${
+                      errors.gender ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                    }`}
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -184,6 +262,7 @@ const Register = () => {
                     <option value="prefer-not">Prefer not to say</option>
                   </select>
                 </div>
+                {errors.gender && <p className="text-red-400 text-sm mt-1">{errors.gender}</p>}
               </div>
             </div>
 
@@ -196,9 +275,14 @@ const Register = () => {
                   id="password"
                   placeholder="Create strong password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, password: e.target.value});
+                    setErrors({...errors, password: ''});
+                  }}
                   required
-                  className="w-full pl-14 pr-14 py-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                  className={`w-full pl-14 pr-14 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                    errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                  }`}
                 />
                 <button
                   type="button"
@@ -208,6 +292,29 @@ const Register = () => {
                   {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
+              {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400">Strength:</span>
+                    <span className={`font-semibold ${getPasswordStrength(formData.password).color}`}>
+                      {getPasswordStrength(formData.password).label}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-600 rounded-full h-1 mt-1">
+                    <div 
+                      className="h-1 rounded-full transition-all" 
+                      style={{
+                        width: `${(getPasswordStrength(formData.password).strength / 5) * 100}%`,
+                        backgroundColor: getPasswordStrength(formData.password).color.replace('text-', '').split('-')[0] === 'red' ? '#ef4444' : 
+                                       getPasswordStrength(formData.password).color.replace('text-', '').split('-')[0] === 'orange' ? '#f97316' :
+                                       getPasswordStrength(formData.password).color.replace('text-', '').split('-')[0] === 'yellow' ? '#eab308' :
+                                       getPasswordStrength(formData.password).color.replace('text-', '').split('-')[0] === 'lime' ? '#84cc16' : '#22c55e'
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -219,20 +326,32 @@ const Register = () => {
                   id="confirmPassword"
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, confirmPassword: e.target.value});
+                    setErrors({...errors, confirmPassword: ''});
+                  }}
                   required
-                  className="w-full pl-14 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-white"
+                  className={`w-full pl-14 pr-4 py-4 border-2 bg-gray-700 rounded-xl focus:outline-none transition-colors text-white ${
+                    errors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-primary-500'
+                  }`}
                 />
               </div>
+              {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
+              {formData.password && formData.confirmPassword === formData.password && (
+                <p className="text-green-400 text-sm mt-1">✓ Passwords match</p>
+              )}
             </div>
 
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.agreeTerms}
-                onChange={(e) => setFormData({...formData, agreeTerms: e.target.checked})}
+                onChange={(e) => {
+                  setFormData({...formData, agreeTerms: e.target.checked});
+                  setErrors({...errors, agreeTerms: ''});
+                }}
                 required
-                className="mt-1 w-5 h-5 text-primary-400 border-gray-300 rounded focus:ring-primary-500"
+                className="mt-1 w-5 h-5 text-primary-400 border-gray-600 bg-gray-700 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-gray-300">
                 I agree to the{' '}
@@ -241,6 +360,7 @@ const Register = () => {
                 <Link to="/privacy" target="_blank" className="text-primary-400 font-semibold hover:underline">Privacy Policy</Link>
               </span>
             </label>
+            {errors.agreeTerms && <p className="text-red-400 text-sm">{errors.agreeTerms}</p>}
 
             <button
               type="submit"

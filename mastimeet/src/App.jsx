@@ -1,10 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Public Pages
 import Home from './pages/public/Home';
 import Join from './pages/public/Join';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
+import VerifyEmail from './pages/public/VerifyEmail';
 import About from './pages/public/About';
 import Contact from './pages/public/Contact';
 import Terms from './pages/public/Terms';
@@ -27,18 +29,19 @@ function App() {
         <Route path="/join" element={<Join />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/guidelines" element={<Guidelines />} />
 
-        {/* App Routes (After Login) */}
-        <Route path="/interest-select" element={<InterestSelect />} />
-        <Route path="/video-chat" element={<VideoChat />} />
-        <Route path="/text-chat" element={<TextChat />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
+        {/* Protected Routes (After Login) */}
+        <Route path="/interest-select" element={<ProtectedRoute element={<InterestSelect />} />} />
+        <Route path="/video-chat" element={<ProtectedRoute element={<VideoChat />} />} />
+        <Route path="/text-chat" element={<ProtectedRoute element={<TextChat />} />} />
+        <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+        <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
 
         {/* Redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
