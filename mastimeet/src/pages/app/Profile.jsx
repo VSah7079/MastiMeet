@@ -117,9 +117,10 @@ const Profile = () => {
 
         {/* Profile Content */}
         {!loading && !error && (
+        <>
         {/* Profile Header Card */}
         <div className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl mb-8">
-          <div className="h-32 bg-linear-to-r from-primary-500 to-secondary-500"></div>
+          <div className="h-32 bg-gradient-to-r from-primary-500 to-secondary-500"></div>
           <div className="px-8 py-6">
             <div className="flex items-start gap-6 mb-6">
               <div className="relative">
