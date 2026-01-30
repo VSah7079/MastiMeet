@@ -1,6 +1,17 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // If user is already logged in, redirect to interest select
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      navigate('/interest-select', { replace: true });
+    }
+  }, [navigate]);
   return (
     <div className="min-h-screen bg-gray-900">
       <nav className="flex justify-between items-center px-[5%] py-6 bg-white/10 backdrop-blur-md sticky top-0 z-50 border-b border-white/20">

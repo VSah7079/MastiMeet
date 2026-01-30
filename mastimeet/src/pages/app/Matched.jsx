@@ -4,10 +4,21 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const Matched = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { roomId, partnerId } = location.state || {};
+  const { roomId, partnerId, isDemo } = location.state || {};
   
   const [countdown, setCountdown] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Demo partner data
+  const demoPartners = [
+    { name: 'Alex', avatar: '👨‍💼', interests: ['Gaming', 'Music'] },
+    { name: 'Jordan', avatar: '👩‍💻', interests: ['Tech', 'Travel'] },
+    { name: 'Casey', avatar: '🧑‍🎨', interests: ['Art', 'Photography'] },
+    { name: 'Morgan', avatar: '👩‍🔬', interests: ['Science', 'Books'] },
+    { name: 'Riley', avatar: '🧑‍🍳', interests: ['Cooking', 'Food'] },
+  ];
+
+  const randomPartner = demoPartners[Math.floor(Math.random() * demoPartners.length)];
 
   useEffect(() => {
     if (!roomId) {
@@ -81,8 +92,17 @@ const Matched = () => {
         {/* Partner Info Card */}
         {!isLoading && (
           <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border border-green-500/30 mb-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="text-6xl mb-4">👤</div>
-            <p className="text-gray-300 text-lg mb-4">Ready to chat with your match!</p>
+            <div className="text-6xl mb-4">{isDemo ? randomPartner.avatar : '👤'}</div>
+            <p className="text-white text-2xl font-bold mb-2">{isDemo ? randomPartner.name : 'Your Match'}</p>
+            <p className="text-gray-300 text-lg mb-4">
+              {isDemo ? `Interested in ${randomPartner.interests.join(', ')}` : 'Ready to chat with your match!'}
+            </p>
+            
+            {isDemo && (
+              <div className="bg-blue-600/20 border border-blue-500/50 rounded-lg p-2 mb-4">
+                <p className="text-blue-300 text-xs font-semibold">🎬 DEMO MODE</p>
+              </div>
+            )}
             
             {/* Quick stats */}
             <div className="grid grid-cols-3 gap-4">
@@ -134,11 +154,21 @@ const Matched = () => {
         {/* Manual Start Button */}
         {!isLoading && countdown <= 0 && (
           <button
-            onClick={() => navigate('/video-chat', { state: { roomId, partnerId } })}
+            onClick={() => navigate('/video-chat', { state: { roomId, partnerId, isDemo } })}
             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-12 py-4 rounded-full font-bold text-white text-lg transition-all transform hover:scale-105 shadow-lg"
           >
             🎬 Start Video Chat
           </button>
+        )}
+
+        {/* Demo Mode Notice */}
+        {isDemo && (
+          <div className="mt-8 bg-blue-600/20 border-2 border-blue-500/50 rounded-xl p-4 max-w-md mx-auto">
+            <p className="text-blue-300 font-semibold text-sm">
+              🎬 This is demo mode - no real video will stream<br/>
+              Click "Start Video Chat" to see the demo interface!
+            </p>
+          </div>
         )}
 
         {/* Fun fact */}

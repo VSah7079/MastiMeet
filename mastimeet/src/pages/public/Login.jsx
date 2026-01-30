@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiPost } from '../../lib/api';
 
 const Login = () => {
   const navigate = useNavigate();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      navigate('/interest-select', { replace: true });
+    }
+  }, [navigate]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''

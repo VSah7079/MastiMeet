@@ -142,13 +142,33 @@ const FindingMatch = () => {
                 </p>
               </div>
 
-              {/* Cancel Button */}
-              <button
-                onClick={handleCancel}
-                className="w-full bg-gradient-to-r from-red-600/80 to-red-700/80 hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
-              >
-                ❌ Cancel Search
-              </button>
+              {/* Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={handleCancel}
+                  className="w-full bg-gradient-to-r from-red-600/80 to-red-700/80 hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
+                >
+                  ❌ Cancel Search
+                </button>
+                
+                {/* Demo Button */}
+                <button
+                  onClick={() => {
+                    if (socketRef.current) {
+                      socketRef.current.emit('queue:leave');
+                      socketRef.current.disconnect();
+                    }
+                    clearInterval(timerRef.current);
+                    // Generate random demo IDs
+                    const demoRoomId = `demo_room_${Date.now()}`;
+                    const demoPartnerId = `demo_user_${Math.random().toString(36).substr(2, 9)}`;
+                    navigate('/matched', { state: { roomId: demoRoomId, partnerId: demoPartnerId, isDemo: true } });
+                  }}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
+                >
+                  🎬 Skip to Demo Match
+                </button>
+              </div>
             </>
           )}
 
