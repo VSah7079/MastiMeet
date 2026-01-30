@@ -161,4 +161,36 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get current user profile
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided.' });
+    }
+
+    const token = authHeader.substring(7);
+    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, secret);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token.' });
+    }
+
+    const user = await User.findById(decoded.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    return res.status(200).json({
+      user: sanitizeUser(user)
+    });
+  } catch (err) {
+    console.error('Get profile error:', err);
+    return res.status(500).json({ message: 'Server error while getting profile.' });
+  }
+});
+
 export default router;

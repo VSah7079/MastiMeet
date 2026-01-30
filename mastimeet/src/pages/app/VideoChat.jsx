@@ -251,12 +251,28 @@ const VideoChat = () => {
 
   const handleEndChat = () => {
     if (confirm('Are you sure you want to end this chat?')) {
+      // Stop all camera and microphone tracks
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => {
+          track.enabled = false;
+          track.stop();
+        });
+        mediaStreamRef.current = null;
+      }
+      
+      // Close peer connection and remote stream
       closePeerConnection();
+      
+      // Disconnect socket
       if (socketRef.current) {
         socketRef.current.emit('queue:leave');
         socketRef.current.disconnect();
       }
+      
+      // Stop camera UI
       stopCamera();
+      
+      // Navigate away
       navigate('/interest-select');
     }
   };

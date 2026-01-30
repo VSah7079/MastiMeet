@@ -1,17 +1,14 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 const Home = () => {
-  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // If user is already logged in, redirect to interest select
+    // Check if user is logged in
     const token = localStorage.getItem('auth_token');
-    if (token) {
-      navigate('/interest-select', { replace: true });
-    }
-  }, [navigate]);
+    setIsLoggedIn(!!token);
+  }, []);
   return (
     <div className="min-h-screen bg-gray-900">
       <nav className="flex justify-between items-center px-[5%] py-6 bg-white/10 backdrop-blur-md sticky top-0 z-50 border-b border-white/20">
@@ -21,8 +18,21 @@ const Home = () => {
         <div className="flex gap-8 items-center">
           <Link to="/about" className="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-all">About</Link>
           <Link to="/contact" className="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-all">Contact</Link>
-          <Link to="/login" className="bg-transparent border-2 border-white px-4 py-2 rounded-lg text-white transition-all hover:bg-white/20">Login</Link>
-          <Link to="/register" className="bg-white text-primary-400 font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-lg">Sign Up</Link>
+          {isLoggedIn ? (
+            <>
+              <Link to="/interest-select" className="bg-white text-primary-400 font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-lg">
+                🎮 Find Match
+              </Link>
+              <Link to="/profile" className="bg-transparent border-2 border-white px-4 py-2 rounded-lg text-white transition-all hover:bg-white/20">
+                👤 Profile
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="bg-transparent border-2 border-white px-4 py-2 rounded-lg text-white transition-all hover:bg-white/20">Login</Link>
+              <Link to="/register" className="bg-white text-primary-400 font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-lg">Sign Up</Link>
+            </>
+          )}
         </div>
       </nav>
 

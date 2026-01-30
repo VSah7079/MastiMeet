@@ -1,23 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [profile, setProfile] = useState({
-    username: 'cool_user_123',
-    email: 'user@example.com',
-    age: 25,
-    gender: 'male',
+    username: '',
+    email: '',
+    age: '',
+    gender: '',
     bio: 'Love gaming, music, and meeting new people!',
-    interests: ['Gaming', 'Music', 'Travel', 'Food', 'Technology'],
+    interests: [],
     joinDate: 'January 2026',
-    totalChats: 150,
-    averageRating: 4.8
+    totalChats: 0,
+    averageRating: 0
   });
+
+  // Fetch user data from backend
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('auth_token');
+        
+        if (!token) {
+          setError('Not logged in');
+          navigate('/login');
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+
+        const data = await response.json();
+        const userProfileData = data.user;
+
+        // Get selected interests from localStorage
+        const selectedInterests = JSON.parse(localStorage.getItem('selectedInterests') || '[]');
+
+        // Update profile with fetched data
+        setProfile(prev => ({
+          ...prev,
+          username: userProfileData.username || '',
+          email: userProfileData.email || '',
+          age: userProfileData.age || '',
+          gender: userProfileData.gender || '',
+          interests: selectedInterests
+        }));
+
+        setError('');
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setError('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
 
   const handleSave = () => {
     setIsEditing(false);
+    // TODO: Add API call to update profile in backend
   };
 
   return (
@@ -42,6 +98,25 @@ const Profile = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-[5%] py-8">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-16">
+            <div className="text-center">
+              <div className="text-6xl mb-4 animate-pulse">⏳</div>
+              <p className="text-xl text-gray-400">Loading profile...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-600/20 border border-red-600 rounded-2xl p-6 mb-8">
+            <p className="text-red-400">⚠️ {error}</p>
+          </div>
+        )}
+
+        {/* Profile Content */}
+        {!loading && !error && (
         {/* Profile Header Card */}
         <div className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl mb-8">
           <div className="h-32 bg-linear-to-r from-primary-500 to-secondary-500"></div>
@@ -121,6 +196,8 @@ const Profile = () => {
             ))}
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
