@@ -44,6 +44,9 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+*.sql
+dump.sql
+migrations/
 
 # Test coverage
 coverage/
