@@ -39,6 +39,7 @@ app.use('/api/auth', authRoutes);
 
 // Simple in-memory queue for matching
 const waitingQueue = [];
+const MATCH_TIMEOUT = 10000; // 10 seconds before random match
 
 const pickMatch = (socket, interests = []) => {
   if (waitingQueue.length === 0) return null;
@@ -52,8 +53,10 @@ const pickMatch = (socket, interests = []) => {
     );
   }
 
-  // Fallback to first in queue
-  if (matchIndex === -1) matchIndex = 0;
+  // If no interest match found, pick random from queue
+  if (matchIndex === -1) {
+    matchIndex = Math.floor(Math.random() * waitingQueue.length);
+  }
 
   return waitingQueue.splice(matchIndex, 1)[0];
 };

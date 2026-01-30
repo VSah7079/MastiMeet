@@ -15,6 +15,9 @@ import Guidelines from './pages/public/Guidelines';
 
 // App Pages (Authenticated)
 import InterestSelect from './pages/app/InterestSelect';
+import Connecting from './pages/app/Connecting';
+import FindingMatch from './pages/app/FindingMatch';
+import Matched from './pages/app/Matched';
 import VideoChat from './pages/app/VideoChat';
 import TextChat from './pages/app/TextChat';
 import Profile from './pages/app/Profile';
@@ -38,6 +41,8 @@ function App() {
 
         {/* Protected Routes (After Login) */}
         <Route path="/interest-select" element={<ProtectedRoute element={<InterestSelect />} />} />
+        <Route path="/connecting" element={<ProtectedRoute element={<Connecting />} />} />
+        <Route path="/finding-match" element={<ProtectedRoute element={<FindingMatch />} />} />
         <Route path="/video-chat" element={<ProtectedRoute element={<VideoChat />} />} />
         <Route path="/text-chat" element={<ProtectedRoute element={<TextChat />} />} />
         <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />

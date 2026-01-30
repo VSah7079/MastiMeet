@@ -45,8 +45,11 @@ const InterestSelect = () => {
       return;
     }
     
-    const targetPage = chatMode === 'video' ? '/video-chat' : '/text-chat';
-    navigate(targetPage, { state: { interests: selectedInterests } });
+    // Save interests to localStorage
+    localStorage.setItem('selectedInterests', JSON.stringify(selectedInterests.map(i => i.name)));
+    
+    // Navigate to connecting page (then auto to finding match)
+    navigate('/connecting');
   };
 
   const groupedInterests = interests.reduce((acc, interest) => {
@@ -104,13 +107,13 @@ const InterestSelect = () => {
           <button 
             className={`text-lg font-bold py-4 px-12 rounded-full transition-all duration-300 ${
               selectedInterests.length > 0 
-                ? 'bg-linear-to-r from-primary-500 to-secondary-500 text-white shadow-xl hover:scale-105' 
+                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-xl hover:scale-105' 
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
             onClick={handleStartChat}
             disabled={selectedInterests.length === 0}
           >
-            Start {chatMode === 'video' ? 'Video' : 'Text'} Chat →
+            🎥 Find Your Match →
           </button>
           <button className="text-lg font-bold py-4 px-12 rounded-full bg-white border-2 border-primary-500 text-primary-500 hover:bg-primary-50 transition-all" onClick={() => handleStartChat()}>
             Skip & Random Match
