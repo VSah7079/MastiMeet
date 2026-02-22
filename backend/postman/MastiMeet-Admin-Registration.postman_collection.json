@@ -1,0 +1,49 @@
+{
+  "info": {
+    "name": "MastiMeet Admin Registration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Admin Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-admin-secret",
+            "value": "{{ADMIN_BOOTSTRAP_SECRET}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"username\": \"admin\"\n}"
+        },
+        "url": {
+          "raw": "{{API_BASE_URL}}/api/auth/admin-register",
+          "host": [
+            "{{API_BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "admin-register"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "API_BASE_URL",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "ADMIN_BOOTSTRAP_SECRET",
+      "value": "your_secret_here"
+    }
+  ]
+}

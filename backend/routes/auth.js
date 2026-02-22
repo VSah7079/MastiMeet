@@ -30,6 +30,44 @@ router.get('/debug/email-config', (req, res) => {
   return res.json({ success: true, environment: process.env.NODE_ENV });
 });
 
+// Admin bootstrap (Postman) - protected via secret
+router.post('/admin-register', async (req, res) => {
+  try {
+    const adminSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
+    const providedSecret = req.headers['x-admin-secret'] || req.body?.adminSecret;
+
+    if (!adminSecret || providedSecret !== adminSecret) {
+      return res.status(403).json({ success: false, message: 'Invalid admin secret' });
+    }
+
+    const { email, password, username } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
+    const existingUser = await User.findOne({ email: String(email).toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: 'Email already exists' });
+    }
+
+    const safeUsername = username || String(email).split('@')[0] || 'admin';
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const newUser = await User.create({
+      username: safeUsername,
+      email: String(email).toLowerCase(),
+      passwordHash,
+      role: 'admin',
+      isEmailVerified: true
+    });
+
+    return res.status(201).json({ success: true, message: 'Admin created', user: sanitizeUser(newUser) });
+  } catch (err) {
+    console.error('Admin register error:', err);
+    return res.status(500).json({ success: false, message: 'Admin creation failed' });
+  }
+});
+
 // Register
 router.post('/register', createRateLimiter('register'), validateRegistration, async (req, res) => {
   try {
