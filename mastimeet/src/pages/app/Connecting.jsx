@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const Connecting = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const chatMode = location.state?.mode || localStorage.getItem('chatMode') || 'video';
+  const chatMode = location.state?.mode || sessionStorage.getItem('chatMode') || 'video';
   const [dots, setDots] = useState('');
   const [status, setStatus] = useState('Establishing connection');
 

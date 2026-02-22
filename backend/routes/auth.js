@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } from '../services/emailService.js';
+import { validateRegistration, validateLogin, validateVerifyEmail, sanitizeInput } from '../middleware/validation.js';
+import createRateLimiter from '../middleware/rateLimiter.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -21,88 +24,51 @@ const sanitizeUser = (user) => ({
   isEmailVerified: user.isEmailVerified
 });
 
-// Debug endpoint to check email configuration
+// Debug endpoint
 router.get('/debug/email-config', (req, res) => {
-  const emailUser = (process.env.EMAIL_USER || '').trim();
-  const emailPass = (process.env.EMAIL_PASSWORD || '').trim();
-  
-  return res.json({
-    emailUser: emailUser ? '✓ Set' : '✗ Missing',
-    emailPassLength: emailPass?.length || 0,
-    emailPassPreview: emailPass ? emailPass.substring(0, 5) + '...' : 'Missing',
-    environment: process.env.NODE_ENV
-  });
+  return res.json({ success: true, environment: process.env.NODE_ENV });
 });
 
-router.post('/register', async (req, res) => {
+// Register
+router.post('/register', createRateLimiter('register'), validateRegistration, async (req, res) => {
   try {
-    const { username, email, password, age, gender } = req.body || {};
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'Username, email, and password are required.' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
-    }
-
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const { username, email, password, age, gender } = req.body;
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(409).json({ message: 'Email already registered.' });
+      const field = existingUser.email === email ? 'email' : 'username';
+      return res.status(409).json({ success: false, message: `${field} already exists` });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const verificationToken = generateVerificationToken();
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const newUser = await User.create({
-      username,
-      email: email.toLowerCase(),
-      passwordHash,
-      age: age ? Number(age) : undefined,
-      gender,
-      isEmailVerified: false, // Temporary: will enable after email setup works
-      emailVerificationToken: verificationToken,
-      emailVerificationExpires: verificationExpires
+      username, email, passwordHash, age: age ? Number(age) : undefined, gender,
+      isEmailVerified: false, emailVerificationToken: verificationToken, emailVerificationExpires: verificationExpires
     });
 
-    // Try to send verification email (but don't block registration if it fails)
     try {
-      const emailSent = await sendVerificationEmail(newUser.email, newUser.username, verificationToken);
-      console.log('📧 Verification email sent:', emailSent);
+      await sendVerificationEmail(newUser.email, newUser.username, verificationToken);
     } catch (emailErr) {
-      console.error('📧 Email sending error (non-blocking):', emailErr.message);
-      // Don't block registration
+      console.error('Email error:', emailErr.message);
     }
 
     const token = signToken(newUser._id.toString());
-
-    return res.status(201).json({
-      message: 'Registration successful! Attempting to send verification email...',
-      token,
-      user: sanitizeUser(newUser)
-    });
+    return res.status(201).json({ success: true, message: 'Registration successful!', token, user: sanitizeUser(newUser) });
   } catch (err) {
     console.error('Register error:', err);
-    return res.status(500).json({ message: 'Server error while registering.' });
+    return res.status(500).json({ success: false, message: 'Registration failed' });
   }
 });
 
-router.post('/verify-email', async (req, res) => {
+// Verify email
+router.post('/verify-email', createRateLimiter('verifyEmail'), validateVerifyEmail, async (req, res) => {
   try {
     const { token } = req.body;
-
-    if (!token) {
-      return res.status(400).json({ message: 'Verification token is required.' });
-    }
-
-    const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpires: { $gt: new Date() }
-    });
-
+    const user = await User.findOne({ emailVerificationToken: token, emailVerificationExpires: { $gt: new Date() } });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired verification token.' });
+      return res.status(400).json({ success: false, message: 'Invalid or expired token' });
     }
 
     user.isEmailVerified = true;
@@ -110,174 +76,106 @@ router.post('/verify-email', async (req, res) => {
     user.emailVerificationExpires = null;
     await user.save();
 
-    // Send welcome email
-    await sendWelcomeEmail(user.email, user.username);
+    try {
+      await sendWelcomeEmail(user.email, user.username);
+    } catch (err) {
+      console.error('Welcome email error:', err);
+    }
 
-    return res.status(200).json({
-      message: 'Email verified successfully! Your account is now active.',
-      user: sanitizeUser(user)
-    });
+    return res.status(200).json({ success: true, message: 'Email verified!', user: sanitizeUser(user) });
   } catch (err) {
-    console.error('Email verification error:', err);
-    return res.status(500).json({ message: 'Server error while verifying email.' });
+    console.error('Verify error:', err);
+    return res.status(500).json({ success: false, message: 'Verification failed' });
   }
 });
 
-router.post('/login', async (req, res) => {
+// Login
+router.post('/login', createRateLimiter('login'), validateLogin, async (req, res) => {
   try {
-    const { email, password } = req.body || {};
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required.' });
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // Temporary: Allow login even if email not verified (for testing)
-    // TODO: Re-enable email verification check after email setup is working
-    // if (!user.isEmailVerified) {
-    //   return res.status(403).json({ 
-    //     message: 'Please verify your email before logging in. Check your inbox for the verification link.',
-    //     needsEmailVerification: true
-    //   });
-    // }
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ success: false, message: 'Please verify your email', needsEmailVerification: true });
+    }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     const token = signToken(user._id.toString());
-
-    return res.status(200).json({
-      token,
-      user: sanitizeUser(user)
-    });
+    return res.status(200).json({ success: true, message: 'Login successful!', token, user: sanitizeUser(user) });
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ message: 'Server error while logging in.' });
+    return res.status(500).json({ success: false, message: 'Login failed' });
   }
 });
 
-// Get current user profile
-router.get('/me', async (req, res) => {
+// Get profile
+router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided.' });
-    }
-
-    const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, secret);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid token.' });
-    }
-
-    const user = await User.findById(decoded.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    return res.status(200).json({
-      user: sanitizeUser(user)
-    });
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    return res.status(200).json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
     console.error('Get profile error:', err);
-    return res.status(500).json({ message: 'Server error while getting profile.' });
+    return res.status(500).json({ success: false, message: 'Failed to fetch profile' });
   }
 });
 
-// Update user profile
-router.put('/update-profile', async (req, res) => {
+// Update profile
+router.put('/update-profile', authMiddleware, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided.' });
-    }
-
-    const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, secret);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid token.' });
-    }
-
     const { username, age, gender, bio } = req.body;
+    const errors = {};
 
-    // Validate input
-    if (username && username.length < 2) {
-      return res.status(400).json({ message: 'Username must be at least 2 characters.' });
+    if (username) {
+      if (username.length < 3 || username.length > 20) errors.username = 'Username must be 3-20 chars';
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) errors.username = 'Only letters, numbers, underscores';
     }
+    if (age && (age < 18 || age > 120)) errors.age = 'Age must be 18-120';
+    if (gender && !['male', 'female', 'other', 'prefer-not-to-say'].includes(gender.toLowerCase())) errors.gender = 'Invalid gender';
+    if (bio && bio.length > 500) errors.bio = 'Bio must be 500 chars or less';
 
-    if (age && (age < 18 || age > 100)) {
-      return res.status(400).json({ message: 'Age must be between 18 and 100.' });
-    }
+    if (Object.keys(errors).length > 0) return res.status(400).json({ success: false, message: 'Validation failed', errors });
 
-    const user = await User.findById(decoded.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    // Update only provided fields
-    if (username) user.username = username;
-    if (age) user.age = age;
-    if (gender) user.gender = gender;
-    if (bio !== undefined) user.bio = bio;
+    if (username) user.username = sanitizeInput(username);
+    if (age) user.age = Number(age);
+    if (gender) user.gender = sanitizeInput(gender).toLowerCase();
+    if (bio) user.bio = sanitizeInput(bio);
 
     await user.save();
-
-    return res.status(200).json({
-      message: 'Profile updated successfully!',
-      user: sanitizeUser(user)
-    });
+    return res.status(200).json({ success: true, message: 'Profile updated!', user: sanitizeUser(user) });
   } catch (err) {
-    console.error('Update profile error:', err);
-    return res.status(500).json({ message: 'Server error while updating profile.' });
+    console.error('Update error:', err);
+    return res.status(500).json({ success: false, message: 'Update failed' });
   }
 });
 
-// Delete user account
-router.delete('/delete-account', async (req, res) => {
+// Delete account
+router.delete('/delete-account', authMiddleware, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided.' });
-    }
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ success: false, message: 'Password required' });
 
-    const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, secret);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid token.' });
-    }
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const user = await User.findById(decoded.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatches) return res.status(401).json({ success: false, message: 'Invalid password' });
 
-    // Delete the user account
-    await User.findByIdAndDelete(decoded.sub);
-
-    return res.status(200).json({
-      message: 'Account deleted successfully!'
-    });
+    await User.findByIdAndDelete(req.userId);
+    return res.status(200).json({ success: true, message: 'Account deleted' });
   } catch (err) {
-    console.error('Delete account error:', err);
-    return res.status(500).json({ message: 'Server error while deleting account.' });
+    console.error('Delete error:', err);
+    return res.status(500).json({ success: false, message: 'Deletion failed' });
   }
 });
 

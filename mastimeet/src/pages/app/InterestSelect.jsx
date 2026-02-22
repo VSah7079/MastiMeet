@@ -45,9 +45,9 @@ const InterestSelect = () => {
       return;
     }
     
-    // Save interests to localStorage
-    localStorage.setItem('selectedInterests', JSON.stringify(selectedInterests.map(i => i.name)));
-    localStorage.setItem('chatMode', chatMode);
+    // Save interests to sessionStorage
+    sessionStorage.setItem('selectedInterests', JSON.stringify(selectedInterests.map(i => i.name)));
+    sessionStorage.setItem('chatMode', chatMode);
     
     // Navigate to connecting page (then auto to finding match)
     navigate('/connecting', { state: { mode: chatMode } });
@@ -108,7 +108,7 @@ const InterestSelect = () => {
           <button 
             className={`text-lg font-bold py-4 px-12 rounded-full transition-all duration-300 ${
               selectedInterests.length > 0 
-                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-xl hover:scale-105' 
+                ? 'bg-linear-to-r from-primary-500 to-secondary-500 text-white shadow-xl hover:scale-105' 
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
             onClick={handleStartChat}

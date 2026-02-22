@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 const FindingMatch = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const chatMode = location.state?.mode || localStorage.getItem('chatMode') || 'video';
+  const chatMode = location.state?.mode || sessionStorage.getItem('chatMode') || 'video';
   const [status, setStatus] = useState('connecting'); // connecting, waiting, found, error
   const [matchCount, setMatchCount] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -20,8 +20,8 @@ const FindingMatch = () => {
       console.log('✓ Connected to server');
       setStatus('waiting');
 
-      // Get selected interests from localStorage
-      const selectedInterests = JSON.parse(localStorage.getItem('selectedInterests') || '[]');
+      // Get selected interests from sessionStorage
+      const selectedInterests = JSON.parse(sessionStorage.getItem('selectedInterests') || '[]');
       console.log('📌 Interests:', selectedInterests);
 
       // Join queue

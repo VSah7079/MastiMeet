@@ -25,10 +25,10 @@ const Settings = () => {
 
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
-      // Clear authentication from localStorage
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('selectedInterests');
+      // Clear authentication from sessionStorage
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_user');
+      sessionStorage.removeItem('selectedInterests');
       
       // Navigate to login
       navigate('/login', { replace: true });
@@ -39,7 +39,7 @@ const Settings = () => {
     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
         try {
-          const token = localStorage.getItem('auth_token');
+          const token = sessionStorage.getItem('auth_token');
           if (!token) {
             alert('Not authenticated');
             return;
@@ -54,10 +54,10 @@ const Settings = () => {
           });
 
           if (response.ok) {
-            // Clear authentication from localStorage
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('auth_user');
-            localStorage.removeItem('selectedInterests');
+            // Clear authentication from sessionStorage
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('auth_user');
+            sessionStorage.removeItem('selectedInterests');
             
             alert('Account deleted successfully');
             navigate('/login', { replace: true });

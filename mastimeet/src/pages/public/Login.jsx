@@ -1,16 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiPost } from '../../lib/api';
+import { apiPost, apiGet } from '../../lib/api';
 
 const Login = () => {
   const navigate = useNavigate();
   
   // Redirect if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      navigate('/interest-select', { replace: true });
-    }
+    const validateExistingSession = async () => {
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) return;
+
+      try {
+        const data = await apiGet('/api/auth/me', token);
+        if (data?.user) {
+          sessionStorage.setItem('auth_user', JSON.stringify(data.user));
+          navigate('/interest-select', { replace: true });
+        } else {
+          throw new Error('Invalid session');
+        }
+      } catch (err) {
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_user');
+      }
+    };
+
+    validateExistingSession();
   }, [navigate]);
 
   const [formData, setFormData] = useState({
@@ -56,8 +71,8 @@ const Login = () => {
         password: formData.password
       });
 
-      localStorage.setItem('auth_token', data.token);
-      localStorage.setItem('auth_user', JSON.stringify(data.user));
+      sessionStorage.setItem('auth_token', data.token);
+      sessionStorage.setItem('auth_user', JSON.stringify(data.user));
 
       navigate('/interest-select');
     } catch (err) {

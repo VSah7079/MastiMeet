@@ -6,7 +6,7 @@ const Home = () => {
 
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     setIsLoggedIn(!!token);
   }, []);
   return (

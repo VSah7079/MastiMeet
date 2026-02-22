@@ -1,26 +1,90 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 const TextChat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isConnecting, setIsConnecting] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [chatTime, setChatTime] = useState(0);
+  const [partnerInfo, setPartnerInfo] = useState(null);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
+  const roomIdRef = useRef(null);
 
   useEffect(() => {
-    setTimeout(() => {
+    // Connect to Socket.io server
+    socketRef.current = io('http://localhost:5000');
+
+    socketRef.current.on('connect', () => {
+      console.log('Connected to signaling server');
+      // Join the matching queue
+      const userInterests = JSON.parse(sessionStorage.getItem('selectedInterests') || '[]');
+      socketRef.current.emit('queue:join', { interests: userInterests });
+    });
+
+    socketRef.current.on('queue:waiting', () => {
+      console.log('Waiting in queue...');
+      setIsConnecting(true);
+      setIsConnected(false);
+      addSystemMessage('Searching for chat partner...');
+    });
+
+    socketRef.current.on('match:found', ({ roomId, partnerId, partnerInterests }) => {
+      console.log('Match found!', { roomId, partnerId });
+      roomIdRef.current = roomId;
+      
+      setPartnerInfo({
+        name: partnerId ? `User ${partnerId.slice(0, 6)}` : 'Chat Partner',
+        status: 'Online',
+        interests: partnerInterests || []
+      });
+      
       setIsConnecting(false);
+      setIsConnected(true);
       addSystemMessage('Connected! Say hello 👋');
-    }, 2000);
+    });
+
+    socketRef.current.on('chat:message', ({ message, sender, timestamp }) => {
+      console.log('Received message:', message);
+      setMessages(prev => [
+        ...prev,
+        { 
+          type: 'received', 
+          text: message, 
+          time: new Date(timestamp),
+          sender
+        }
+      ]);
+    });
+
+    socketRef.current.on('partner:disconnected', ({ reason }) => {
+      console.log('Partner disconnected:', reason);
+      setIsConnected(false);
+      addSystemMessage('Partner left the chat 👋');
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setIsConnected(false);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('queue:leave');
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => setChatTime(prev => prev + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (isConnected) {
+      const timer = setInterval(() => setChatTime(prev => prev + 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isConnected]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -32,33 +96,52 @@ const TextChat = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !isConnected) return;
 
+    // Add to local messages
     setMessages(prev => [
       ...prev,
-      { type: 'sent', text: inputMessage, time: new Date() }
+      { type: 'sent', text: inputMessage, time: new Date(), sender: 'You' }
     ]);
-    setInputMessage('');
 
-    // Simulate typing and response
-    setTimeout(() => setIsTyping(true), 1000);
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages(prev => [
-        ...prev,
-        { type: 'received', text: 'Hey! Nice to meet you! 😊', time: new Date() }
-      ]);
-    }, 3000);
+    // Send to partner via Socket.io
+    if (socketRef.current && roomIdRef.current) {
+      socketRef.current.emit('chat:message', {
+        roomId: roomIdRef.current,
+        message: inputMessage,
+        sender: 'You',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    setInputMessage('');
   };
 
   const handleNext = () => {
-    setMessages([]);
-    setIsConnecting(true);
-    setChatTime(0);
-    setTimeout(() => {
-      setIsConnecting(false);
-      addSystemMessage('New chat started!');
-    }, 2000);
+    if (confirm('Skip this chat and find someone new?')) {
+      setMessages([]);
+      setIsConnecting(true);
+      setIsConnected(false);
+      setChatTime(0);
+      setPartnerInfo(null);
+      roomIdRef.current = null;
+      
+      // Rejoin queue
+      if (socketRef.current) {
+        const userInterests = JSON.parse(sessionStorage.getItem('selectedInterests') || '[]');
+        socketRef.current.emit('queue:join', { interests: userInterests });
+      }
+    }
+  };
+
+  const handleEndChat = () => {
+    if (confirm('End chat and go back?')) {
+      if (socketRef.current) {
+        socketRef.current.emit('queue:leave');
+        socketRef.current.disconnect();
+      }
+      navigate('/interest-select');
+    }
   };
 
   const formatTime = (seconds) => {
@@ -74,9 +157,9 @@ const TextChat = () => {
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold">💬 Text Chat</h2>
           <span className={`flex items-center gap-2 px-4 py-2 rounded-full ${isConnecting ? 'bg-yellow-600' : 'bg-green-600'}`}>
-            {isConnecting ? '🔄 Connecting...' : '🟢 Connected'}
+            {isConnecting ? '🔄 Searching...' : '🟢 Connected'}
           </span>
-          <span className="bg-primary-500 px-4 py-2 rounded-full text-sm">⏱️ {formatTime(chatTime)}</span>
+          {isConnected && <span className="bg-primary-500 px-4 py-2 rounded-full text-sm">⏱️ {formatTime(chatTime)}</span>}
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -92,7 +175,7 @@ const TextChat = () => {
             ⚙️ Settings
           </button>
           <button 
-            onClick={() => navigate('/interest-select')}
+            onClick={handleEndChat}
             className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors font-semibold"
           >
             End Chat
@@ -100,12 +183,32 @@ const TextChat = () => {
         </div>
       </div>
 
+      {/* Partner Info Bar (if connected) */}
+      {isConnected && partnerInfo && (
+        <div className="bg-gray-800 px-[5%] py-3 border-b border-gray-700 flex items-center gap-4">
+          <span className="text-2xl">👤</span>
+          <div className="flex-1">
+            <p className="font-semibold">{partnerInfo.name}</p>
+            <p className="text-sm text-green-400">{partnerInfo.status}</p>
+          </div>
+          {partnerInfo.interests && partnerInfo.interests.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {partnerInfo.interests.slice(0, 2).map((interest, idx) => (
+                <span key={idx} className="bg-primary-600 px-3 py-1 rounded-full text-xs">
+                  {interest}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-[5%] py-6 space-y-4">
-        {isConnecting ? (
+        {isConnecting && !isConnected ? (
           <div className="h-full flex flex-col items-center justify-center">
             <div className="text-6xl mb-4 animate-bounce">🔄</div>
-            <p className="text-2xl font-semibold mb-2">Connecting...</p>
+            <p className="text-2xl font-semibold mb-2">Searching for partner...</p>
             <p className="text-gray-400">Finding someone interesting to chat with</p>
           </div>
         ) : (
@@ -139,17 +242,6 @@ const TextChat = () => {
                 </div>
               ))
             )}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-none">
-                  <div className="flex gap-2 items-center">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                  </div>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </>
         )}
@@ -163,19 +255,22 @@ const TextChat = () => {
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-full border border-gray-600 focus:border-primary-500 focus:outline-none placeholder-gray-400"
+              placeholder={isConnected ? "Type a message..." : "Searching for partner..."}
+              disabled={!isConnected}
+              className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-full border border-gray-600 focus:border-primary-500 focus:outline-none placeholder-gray-400 disabled:opacity-50"
             />
             <button
               type="button"
               onClick={handleNext}
-              className="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-full font-semibold transition-colors"
+              className="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-full font-semibold transition-colors disabled:opacity-50"
+              disabled={!isConnected}
             >
               ⏭️ Next
             </button>
             <button
               type="submit"
-              className="bg-primary-600 hover:bg-primary-700 px-8 py-3 rounded-full font-semibold transition-colors"
+              disabled={!isConnected}
+              className="bg-primary-600 hover:bg-primary-700 px-8 py-3 rounded-full font-semibold transition-colors disabled:opacity-50"
             >
               Send 📤
             </button>

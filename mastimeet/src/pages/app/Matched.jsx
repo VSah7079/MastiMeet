@@ -5,7 +5,7 @@ const Matched = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { roomId, partnerId, isDemo, mode } = location.state || {};
-  const chatMode = mode || localStorage.getItem('chatMode') || 'video';
+  const chatMode = mode || sessionStorage.getItem('chatMode') || 'video';
   
   const [countdown, setCountdown] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +23,7 @@ const Matched = () => {
 
   useEffect(() => {
     if (!roomId) {
-      navigate('/interest-select');
+      navigate('/interest-select', { replace: true });
       return;
     }
 
@@ -52,7 +52,7 @@ const Matched = () => {
       clearTimeout(loadingTimer);
       clearInterval(countdownInterval);
     };
-  }, [roomId, navigate, partnerId]);
+  }, [roomId, navigate, partnerId, chatMode]);
 
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
@@ -88,7 +88,7 @@ const Matched = () => {
         <p className="text-xl text-gray-400 mb-8">
           {isLoading 
             ? 'We found the perfect match for you!' 
-            : 'Starting video chat in a moment...'}
+            : `Starting ${chatMode === 'text' ? 'text' : 'video'} chat in a moment...`}
         </p>
 
         {/* Partner Info Card */}
@@ -114,7 +114,9 @@ const Matched = () => {
               </div>
               <div className="bg-gray-700/50 rounded-lg p-3">
                 <p className="text-gray-400 text-xs">Type</p>
-                <p className="text-blue-400 font-bold text-lg">🎥 Video</p>
+                <p className="text-blue-400 font-bold text-lg">
+                  {chatMode === 'text' ? '💬 Text' : '🎥 Video'}
+                </p>
               </div>
               <div className="bg-gray-700/50 rounded-lg p-3">
                 <p className="text-gray-400 text-xs">Quality</p>
@@ -127,7 +129,7 @@ const Matched = () => {
         {/* Countdown */}
         {!isLoading && countdown > 0 && (
           <div className="mb-8">
-            <div className="inline-block bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-4 rounded-full">
+            <div className="inline-block bg-linear-to-r from-primary-600 to-primary-700 px-8 py-4 rounded-full">
               <p className="text-white font-bold text-2xl">
                 Starting in <span className="text-primary-200">{countdown}s</span>
               </p>
@@ -156,10 +158,13 @@ const Matched = () => {
         {/* Manual Start Button */}
         {!isLoading && countdown <= 0 && (
           <button
-            onClick={() => navigate('/video-chat', { state: { roomId, partnerId, isDemo } })}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-12 py-4 rounded-full font-bold text-white text-lg transition-all transform hover:scale-105 shadow-lg"
+            onClick={() => {
+              const chatPath = chatMode === 'text' ? '/text-chat' : '/video-chat';
+              navigate(chatPath, { state: { roomId, partnerId, isDemo } });
+            }}
+            className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-12 py-4 rounded-full font-bold text-white text-lg transition-all transform hover:scale-105 shadow-lg"
           >
-            🎬 Start Video Chat
+            {chatMode === 'text' ? '💬 Start Text Chat' : '🎬 Start Video Chat'}
           </button>
         )}
 
@@ -167,8 +172,8 @@ const Matched = () => {
         {isDemo && (
           <div className="mt-8 bg-blue-600/20 border-2 border-blue-500/50 rounded-xl p-4 max-w-md mx-auto">
             <p className="text-blue-300 font-semibold text-sm">
-              🎬 This is demo mode - no real video will stream<br/>
-              Click "Start Video Chat" to see the demo interface!
+              🎬 This is demo mode - no real {chatMode === 'text' ? 'text' : 'video'} stream will start<br/>
+              Click the button to see the demo interface!
             </p>
           </div>
         )}

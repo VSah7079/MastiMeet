@@ -23,7 +23,7 @@ const Profile = () => {
     const fetchUserProfile = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('auth_token');
+        const token = sessionStorage.getItem('auth_token');
         
         if (!token) {
           setError('Not logged in');
@@ -46,8 +46,8 @@ const Profile = () => {
         const data = await response.json();
         const userProfileData = data.user;
 
-        // Get selected interests from localStorage
-        const selectedInterests = JSON.parse(localStorage.getItem('selectedInterests') || '[]');
+        // Get selected interests from sessionStorage
+        const selectedInterests = JSON.parse(sessionStorage.getItem('selectedInterests') || '[]');
 
         // Update profile with fetched data
         setProfile(prev => ({

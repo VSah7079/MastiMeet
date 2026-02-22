@@ -17,3 +17,23 @@ export const apiPost = async (path, body) => {
 
   return data;
 };
+
+export const apiGet = async (path, token) => {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'GET',
+    headers
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Request failed');
+  }
+
+  return data;
+};
