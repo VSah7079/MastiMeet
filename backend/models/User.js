@@ -44,6 +44,11 @@ const userSchema = new mongoose.Schema(
     emailVerificationExpires: {
       type: Date,
       default: null
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'moderator'],
+      default: 'user'
     }
   },
   {

@@ -6,7 +6,8 @@
   "description": "MastiMeet backend (API + Socket.io signaling)",
   "scripts": {
     "dev": "node index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "seed:admin": "node scripts/setAdmin.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

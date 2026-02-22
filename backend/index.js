@@ -6,6 +6,7 @@ import path from 'path';
 import { Server } from 'socket.io';
 import connectDB from './db.js';
 import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
 
 // Load .env file explicitly
 const __dirname = path.resolve();
@@ -51,6 +52,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // In-memory tracking for queue, rooms, and messages
 const waitingQueue = [];

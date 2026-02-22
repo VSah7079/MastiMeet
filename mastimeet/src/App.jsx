@@ -22,6 +22,7 @@ import VideoChat from './pages/app/VideoChat';
 import TextChat from './pages/app/TextChat';
 import Profile from './pages/app/Profile';
 import Settings from './pages/app/Settings';
+import AdminPanel from './pages/admin/AdminPanel';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
         <Route path="/text-chat" element={<ProtectedRoute element={<TextChat />} />} />
         <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
         <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
+        <Route path="/admin" element={<ProtectedRoute element={<AdminPanel />} allowedRoles={["admin"]} />} />
 
         {/* Redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

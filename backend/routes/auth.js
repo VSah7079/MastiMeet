@@ -21,7 +21,8 @@ const sanitizeUser = (user) => ({
   age: user.age,
   gender: user.gender,
   bio: user.bio || '',
-  isEmailVerified: user.isEmailVerified
+  isEmailVerified: user.isEmailVerified,
+  role: user.role || 'user'
 });
 
 // Debug endpoint
@@ -42,9 +43,11 @@ router.post('/register', createRateLimiter('register'), validateRegistration, as
     const passwordHash = await bcrypt.hash(password, 12);
     const verificationToken = generateVerificationToken();
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const adminEmail = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.toLowerCase() : null;
+    const role = adminEmail && adminEmail === String(email).toLowerCase() ? 'admin' : 'user';
 
     const newUser = await User.create({
-      username, email, passwordHash, age: age ? Number(age) : undefined, gender,
+      username, email, passwordHash, age: age ? Number(age) : undefined, gender, role,
       isEmailVerified: false, emailVerificationToken: verificationToken, emailVerificationExpires: verificationExpires
     });
 
