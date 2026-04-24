@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
 const VideoChat = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const incomingRoomId = location.state?.roomId || null;
+  const incomingPartnerId = location.state?.partnerId || null;
   const [isConnecting, setIsConnecting] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -54,9 +57,35 @@ const VideoChat = () => {
 
     socketRef.current.on('connect', () => {
       console.log('Connected to signaling server');
-      // Join the matching queue with user's interests (get from sessionStorage or props)
+
+      if (incomingRoomId) {
+        roomIdRef.current = incomingRoomId;
+        setPartnerInfo((prev) => prev || {
+          name: incomingPartnerId ? `User ${incomingPartnerId.slice(0, 4)}` : 'Chat Partner',
+          interests: []
+        });
+        socketRef.current.emit('room:join-existing', { roomId: incomingRoomId });
+        return;
+      }
+
+      // Fallback flow: join queue if page is opened directly.
       const userInterests = JSON.parse(sessionStorage.getItem('selectedInterests') || '[]');
       socketRef.current.emit('queue:join', { interests: userInterests });
+    });
+
+    socketRef.current.on('room:joined', ({ roomId, participantCount }) => {
+      roomIdRef.current = roomId;
+      setIsConnecting(participantCount < 2);
+    });
+
+    socketRef.current.on('room:ready', async ({ roomId, participantIds = [] }) => {
+      const localId = socketRef.current?.id;
+      if (!localId) return;
+
+      roomIdRef.current = roomId;
+      const sortedParticipants = [...participantIds].sort();
+      const isInitiator = sortedParticipants[0] === localId;
+      await createPeerConnection(roomId, isInitiator);
     });
 
     socketRef.current.on('queue:waiting', (data) => {
@@ -115,12 +144,14 @@ const VideoChat = () => {
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.emit('queue:leave');
+        if (!incomingRoomId) {
+          socketRef.current.emit('queue:leave');
+        }
         socketRef.current.disconnect();
       }
       closePeerConnection();
     };
-  }, []);
+  }, [incomingPartnerId, incomingRoomId]);
 
   useEffect(() => {
     if (isConnected) {

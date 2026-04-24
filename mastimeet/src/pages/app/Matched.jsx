@@ -7,7 +7,7 @@ const Matched = () => {
   const { roomId, partnerId, isDemo, mode } = location.state || {};
   const chatMode = mode || sessionStorage.getItem('chatMode') || 'video';
   
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
   // Demo partner data
@@ -27,10 +27,10 @@ const Matched = () => {
       return;
     }
 
-    // Stop loading animation after 1 second
+    // Keep a tiny loading state for smoother transition.
     const loadingTimer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000);
+    }, 250);
 
     // Countdown timer
     const countdownInterval = setInterval(() => {
@@ -39,9 +39,7 @@ const Matched = () => {
           clearInterval(countdownInterval);
           // Redirect to appropriate chat page based on mode
           const chatPath = chatMode === 'text' ? '/text-chat' : '/video-chat';
-          setTimeout(() => {
-            navigate(chatPath, { state: { roomId, partnerId } });
-          }, 500);
+          navigate(chatPath, { state: { roomId, partnerId }, replace: true });
           return 0;
         }
         return prev - 1;

@@ -43,10 +43,9 @@ const FindingMatch = () => {
       clearInterval(timerRef.current);
       setStatus('found');
 
-      // Redirect to matched page after 2 seconds
-      setTimeout(() => {
-        navigate('/matched', { state: { roomId, partnerId, mode: chatMode } });
-      }, 2000);
+      // Instant transition to chat to avoid extra waiting after a match.
+      const chatPath = chatMode === 'text' ? '/text-chat' : '/video-chat';
+      navigate(chatPath, { state: { roomId, partnerId, mode: chatMode }, replace: true });
     });
 
     socketRef.current.on('connect_error', (error) => {
@@ -61,7 +60,7 @@ const FindingMatch = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [navigate]);
+  }, [navigate, chatMode]);
 
   const handleCancel = () => {
     if (socketRef.current) {

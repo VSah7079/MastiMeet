@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
 const TextChat = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const incomingRoomId = location.state?.roomId || null;
+  const incomingPartnerId = location.state?.partnerId || null;
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isConnecting, setIsConnecting] = useState(true);
@@ -20,9 +23,36 @@ const TextChat = () => {
 
     socketRef.current.on('connect', () => {
       console.log('Connected to signaling server');
-      // Join the matching queue
+
+      if (incomingRoomId) {
+        roomIdRef.current = incomingRoomId;
+        setPartnerInfo({
+          name: incomingPartnerId ? `User ${incomingPartnerId.slice(0, 6)}` : 'Chat Partner',
+          status: 'Online',
+          interests: []
+        });
+        socketRef.current.emit('room:join-existing', { roomId: incomingRoomId });
+        return;
+      }
+
+      // Fallback when chat page is opened directly.
       const userInterests = JSON.parse(sessionStorage.getItem('selectedInterests') || '[]');
       socketRef.current.emit('queue:join', { interests: userInterests });
+    });
+
+    socketRef.current.on('room:joined', ({ roomId, participantCount }) => {
+      roomIdRef.current = roomId;
+      setIsConnecting(participantCount < 2);
+      if (participantCount >= 2) {
+        setIsConnected(true);
+      }
+    });
+
+    socketRef.current.on('room:ready', ({ roomId }) => {
+      roomIdRef.current = roomId;
+      setIsConnecting(false);
+      setIsConnected(true);
+      addSystemMessage('Connected! Say hello 👋');
     });
 
     socketRef.current.on('queue:waiting', () => {
@@ -73,11 +103,13 @@ const TextChat = () => {
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.emit('queue:leave');
+        if (!incomingRoomId) {
+          socketRef.current.emit('queue:leave');
+        }
         socketRef.current.disconnect();
       }
     };
-  }, []);
+  }, [incomingPartnerId, incomingRoomId]);
 
   useEffect(() => {
     if (isConnected) {

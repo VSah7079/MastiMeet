@@ -18,9 +18,23 @@ console.log('  Email Pass:', process.env.EMAIL_PASSWORD ? `✓ Set (${process.en
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOriginHandler = (origin, callback) => {
+  // Allow non-browser requests (no Origin header) and configured origins.
+  if (!origin || allowedOrigins.includes(origin)) {
+    callback(null, true);
+    return;
+  }
+  callback(new Error(`Origin ${origin} not allowed by CORS`));
+};
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: corsOriginHandler,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -37,7 +51,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: corsOriginHandler,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -58,23 +72,30 @@ app.use('/api/admin', adminRoutes);
 const waitingQueue = [];
 const userRooms = new Map(); // socket.id -> roomId
 const roomMessages = new Map(); // roomId -> [messages]
-const MATCH_TIMEOUT = 10000; // 10 seconds before random match
+
+const normalizeInterests = (interests = []) =>
+  interests
+    .filter((interest) => typeof interest === 'string')
+    .map((interest) => interest.trim().toLowerCase())
+    .filter(Boolean);
+
+const hasCommonInterest = (first = [], second = []) => {
+  if (!first.length || !second.length) return false;
+  const secondSet = new Set(second);
+  return first.some((interest) => secondSet.has(interest));
+};
+
 
 const pickMatch = (socket, interests = []) => {
   if (waitingQueue.length === 0) return null;
 
-  // Try to find someone with shared interests
-  let matchIndex = -1;
-  if (interests.length) {
-    matchIndex = waitingQueue.findIndex((item) =>
-      item.socketId !== socket.id &&
-      item.interests?.some((i) => interests.includes(i))
-    );
-  }
+  // Strict match: only connect users with at least one shared interest.
+  const matchIndex = waitingQueue.findIndex((item) =>
+    item.socketId !== socket.id && hasCommonInterest(interests, item.interests)
+  );
 
-  // If no interest match found, pick random from queue
   if (matchIndex === -1) {
-    matchIndex = Math.floor(Math.random() * waitingQueue.length);
+    return null;
   }
 
   return waitingQueue.splice(matchIndex, 1)[0];
@@ -85,8 +106,16 @@ io.on('connection', (socket) => {
 
   // Queue Management
   socket.on('queue:join', ({ interests = [] } = {}) => {
-    console.log(`${socket.id} joining queue with interests:`, interests);
-    const match = pickMatch(socket, interests);
+    const normalizedInterests = normalizeInterests(interests);
+    console.log(`${socket.id} joining queue with interests:`, normalizedInterests);
+
+    // Prevent duplicate queue entries for same socket.
+    const existingIndex = waitingQueue.findIndex((item) => item.socketId === socket.id);
+    if (existingIndex !== -1) {
+      waitingQueue.splice(existingIndex, 1);
+    }
+
+    const match = pickMatch(socket, normalizedInterests);
 
     if (match) {
       const roomId = `room_${socket.id}_${match.socketId}`;
@@ -102,9 +131,9 @@ io.on('connection', (socket) => {
 
       console.log(`Match found! Room: ${roomId}`);
       socket.emit('match:found', { roomId, partnerId: match.socketId, partnerInterests: match.interests });
-      match.socket.emit('match:found', { roomId, partnerId: socket.id, partnerInterests: interests });
+      match.socket.emit('match:found', { roomId, partnerId: socket.id, partnerInterests: normalizedInterests });
     } else {
-      waitingQueue.push({ socket, socketId: socket.id, interests });
+      waitingQueue.push({ socket, socketId: socket.id, interests: normalizedInterests });
       console.log(`${socket.id} waiting in queue. Queue size: ${waitingQueue.length}`);
       socket.emit('queue:waiting');
     }
@@ -115,6 +144,35 @@ io.on('connection', (socket) => {
     if (index !== -1) {
       waitingQueue.splice(index, 1);
       console.log(`${socket.id} left queue`);
+    }
+  });
+
+  // Rejoin an existing matched room after route change/new socket connection.
+  socket.on('room:join-existing', ({ roomId } = {}) => {
+    if (!roomId) {
+      socket.emit('room:error', { message: 'roomId is required' });
+      return;
+    }
+
+    socket.join(roomId);
+    userRooms.set(socket.id, roomId);
+
+    if (!roomMessages.has(roomId)) {
+      roomMessages.set(roomId, []);
+    }
+
+    const participants = io.sockets.adapter.rooms.get(roomId);
+    const participantIds = participants ? Array.from(participants) : [];
+
+    socket.emit('room:joined', {
+      roomId,
+      participantCount: participantIds.length,
+      participantIds
+    });
+
+    // If both users have joined from chat route, start handshake immediately.
+    if (participantIds.length >= 2) {
+      io.to(roomId).emit('room:ready', { roomId, participantIds });
     }
   });
 
@@ -169,16 +227,19 @@ io.on('connection', (socket) => {
     // Notify partner if in a room
     const roomId = userRooms.get(socket.id);
     if (roomId) {
-      io.to(roomId).emit('partner:disconnected', { reason: 'Partner left the chat' });
       userRooms.delete(socket.id);
-      
-      // Clean up the other user's room mapping
-      const allSockets = io.sockets.sockets;
-      for (let [sid, s] of allSockets) {
-        if (userRooms.get(sid) === roomId) {
-          userRooms.delete(sid);
+
+      // Grace period avoids false disconnect events during route transitions.
+      setTimeout(() => {
+        const participants = io.sockets.adapter.rooms.get(roomId);
+        const participantCount = participants ? participants.size : 0;
+
+        // Notify only when exactly one peer is left in the room.
+        // If 2 peers are present, both users have likely rejoined after route transition.
+        if (participantCount === 1) {
+          io.to(roomId).emit('partner:disconnected', { reason: 'Partner left the chat' });
         }
-      }
+      }, 1500);
     }
   });
 });
