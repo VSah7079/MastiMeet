@@ -89,16 +89,22 @@ const hasCommonInterest = (first = [], second = []) => {
 const pickMatch = (socket, interests = []) => {
   if (waitingQueue.length === 0) return null;
 
-  // Strict match: only connect users with at least one shared interest.
   const matchIndex = waitingQueue.findIndex((item) =>
     item.socketId !== socket.id && hasCommonInterest(interests, item.interests)
   );
 
-  if (matchIndex === -1) {
+  if (matchIndex !== -1) {
+    return waitingQueue.splice(matchIndex, 1)[0];
+  }
+
+  // Fallback to the oldest waiting user so users do not get stuck searching forever.
+  const fallbackIndex = waitingQueue.findIndex((item) => item.socketId !== socket.id);
+  if (fallbackIndex === -1) {
     return null;
   }
 
-  return waitingQueue.splice(matchIndex, 1)[0];
+  const fallbackMatch = waitingQueue.splice(fallbackIndex, 1)[0];
+  return { ...fallbackMatch, isFallback: true };
 };
 
 io.on('connection', (socket) => {
@@ -130,8 +136,8 @@ io.on('connection', (socket) => {
       roomMessages.set(roomId, []);
 
       console.log(`Match found! Room: ${roomId}`);
-      socket.emit('match:found', { roomId, partnerId: match.socketId, partnerInterests: match.interests });
-      match.socket.emit('match:found', { roomId, partnerId: socket.id, partnerInterests: normalizedInterests });
+      socket.emit('match:found', { roomId, partnerId: match.socketId, partnerInterests: match.interests, isFallback: Boolean(match.isFallback) });
+      match.socket.emit('match:found', { roomId, partnerId: socket.id, partnerInterests: normalizedInterests, isFallback: Boolean(match.isFallback) });
     } else {
       waitingQueue.push({ socket, socketId: socket.id, interests: normalizedInterests });
       console.log(`${socket.id} waiting in queue. Queue size: ${waitingQueue.length}`);
